@@ -1,0 +1,12 @@
+{
+  "suggestions": [
+    {
+      "text": "default",
+      "desc": "the first"
+    },
+    {
+      "text": "kube-system",
+      "desc": "the second"
+    }
+  ]
+}
