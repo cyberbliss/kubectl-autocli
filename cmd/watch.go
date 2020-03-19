@@ -5,22 +5,23 @@ import (
 	"autocli/service"
 	"errors"
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
-	"k8s.io/client-go/kubernetes"
 	"net"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+	"k8s.io/client-go/kubernetes"
 )
 
-func NewWatchCommand(b Builder) *cobra.Command  {
+func NewWatchCommand(b Builder) *cobra.Command {
 	var watchCmd = &cobra.Command{
-		Use:   "watch [flags] [contexts]...",
-		Short: "Start watching Kube servers",
-		Long:  "",
+		Use:          "watch [flags] [contexts]...",
+		Short:        "Start watching Kube servers",
+		Long:         "",
 		SilenceUsage: true,
-		Args: cobra.MinimumNArgs(1),
-		RunE:  func(cmd *cobra.Command, args []string) error {
+		Args:         cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := RunCommon(cmd); err != nil {
 				return err
 			}
@@ -77,7 +78,7 @@ func RunWatch(b Builder, cmd *cobra.Command, args []string) error {
 		clients[arg] = clientset
 		fields := log.Fields{
 			"context": arg,
-			"host": cc.Host,
+			"host":    cc.Host,
 		}
 		log.WithFields(fields).Info("created client")
 	}
@@ -109,7 +110,7 @@ func isWatching(r string, rs string) bool {
 	return len(rs) == 0 || strings.Contains(rs, r)
 }
 
-func loopWatchObjects(c *service.WatchCache, kc service.KubeClient, kind, context string) {
+func loopWatchObjects(c *WatchCache, kc service.KubeClient, kind, context string) {
 	events := make(chan *model.ResourceEvent)
 	l := log.WithField("kind", kind).WithField("context", context)
 
@@ -122,7 +123,7 @@ func loopWatchObjects(c *service.WatchCache, kc service.KubeClient, kind, contex
 				fields["error"] = err.Error()
 			}
 			l.WithFields(fields).Info("watch connection was closed, retrying")
-			c.DeleteKubeObjects(context, kind)
+			c.deleteKubeObjects(context, kind)
 		}
 	}
 
@@ -136,9 +137,9 @@ func loopWatchObjects(c *service.WatchCache, kc service.KubeClient, kind, contex
 					Info("received event")
 				switch e.Type {
 				case model.Deleted:
-					c.DeleteKubeObject(context, *e.Resource)
+					c.deleteKubeObject(context, *e.Resource)
 				case model.Added, model.Modified:
-					c.UpdateKubeObject(context, *e.Resource)
+					c.updateKubeObject(context, *e.Resource)
 				}
 				l.WithField("cache", c.Resources).Debugf("objects in cache")
 			}
