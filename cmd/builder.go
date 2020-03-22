@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"autocli/model"
 	"autocli/service"
 	"io"
 	"net"
@@ -16,6 +17,7 @@ import (
 type Builder interface {
 	StdOut() io.Writer
 	PodCompleter(in prompt.Document) []prompt.Suggest
+	PopulateSuggestions(resources *[]model.KubeResource)
 	KubeClient(clients map[string]kubernetes.Interface) service.KubeClient
 	WatchCache() *WatchCache
 	WatchClient(address string) (WatchClient, error)
@@ -23,8 +25,8 @@ type Builder interface {
 }
 
 type DefaultBuilder struct {
-	Streams genericclioptions.IOStreams
-	//suggestions []prompt.Suggest
+	Streams     genericclioptions.IOStreams
+	suggestions []prompt.Suggest
 	//PodCompleter prompt.Completer
 }
 
@@ -42,9 +44,21 @@ func (b *DefaultBuilder) StdOut() io.Writer {
 	return b.Streams.Out
 }
 
+func (b *DefaultBuilder) PopulateSuggestions(resources *[]model.KubeResource) {
+	s := make([]prompt.Suggest, 0)
+	for _, res := range *resources {
+		s = append(s, prompt.Suggest{
+			Text:        res.Name,
+			Description: res.Namespace,
+		})
+	}
+
+	b.suggestions = s
+}
+
 func (b *DefaultBuilder) PodCompleter(in prompt.Document) []prompt.Suggest {
-	s := service.GetPods()
-	return prompt.FilterContains(s, in.GetWordBeforeCursor(), true)
+	//s := service.GetPods()
+	return prompt.FilterContains(b.suggestions, in.GetWordBeforeCursor(), true)
 }
 
 func (b *DefaultBuilder) KubeClient(clients map[string]kubernetes.Interface) service.KubeClient {

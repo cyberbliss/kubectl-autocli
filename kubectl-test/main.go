@@ -3,19 +3,21 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	prompt "github.com/c-bata/go-prompt"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
+
+	prompt "github.com/c-bata/go-prompt"
 )
+
 type SuggestList struct {
 	Suggestions []SuggestType `json:"suggestions"`
 }
 
 type SuggestType struct {
-	Text string `json:"text"`
+	Text        string `json:"text"`
 	Description string `json:"desc"`
 }
 
@@ -42,17 +44,17 @@ func fileCompleter(in prompt.Document) []prompt.Suggest {
 	json.Unmarshal(byteValue, &sl)
 	for i := 0; i < len(sl.Suggestions); i++ {
 		s = append(s, prompt.Suggest{
-			Text:        fmt.Sprintf("%d: %s",i,sl.Suggestions[i].Text),
+			Text:        fmt.Sprintf("%d: %s", i, sl.Suggestions[i].Text),
 			Description: sl.Suggestions[i].Description,
 		})
 	}
 
-	return prompt.FilterHasPrefix(s, in.GetWordBeforeCursor(), true)
+	return prompt.FilterContains(s, in.GetWordBeforeCursor(), true)
 }
 
 func executor(t string) {
 	//fmt.Println(t)
-	cmd := exec.Command("kubectl", "get", "pods","-n", t)
+	cmd := exec.Command("kubectl", "get", "pods", "-n", t)
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -61,7 +63,6 @@ func executor(t string) {
 		log.Fatalf("failed with %s\n", err)
 	}
 }
-
 
 func main() {
 	in := prompt.Input(">>> ", fileCompleter,
@@ -73,7 +74,7 @@ func main() {
 		prompt.OptionSelectedSuggestionBGColor(prompt.LightGray),
 		prompt.OptionSuggestionBGColor(prompt.DarkGray))
 	fmt.Println("Your input: " + in)
-	ns := strings.Split(in,": ")
+	ns := strings.Split(in, ": ")
 	executor(ns[1])
 	//p := prompt.New(
 	//	executor,
