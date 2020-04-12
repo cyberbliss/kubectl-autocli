@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"autocli/model"
+	"fmt"
+	v1 "k8s.io/api/core/v1"
 	"testing"
 
 	"github.com/c-bata/go-prompt"
@@ -18,12 +20,16 @@ func TestPodCompleter(t *testing.T) {
 
 				r := model.KubeResource{
 					model.TypeMeta{Kind: kind},
-					model.ResourceMeta{Name: name, Namespace: ns},
+					model.ResourceMeta{
+						Name:      name,
+						Namespace: ns,
+						Status:    string(v1.PodRunning),
+					},
 				}
 				resources = append(resources, r)
 				e := prompt.Suggest{
-					Text:        name,
-					Description: ns,
+					Text:        fmt.Sprintf("%s [%s]", name, ns),
+					Description: string(v1.PodRunning),
 				}
 				expected = append(expected, e)
 			}

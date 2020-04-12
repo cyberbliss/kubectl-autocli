@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"autocli/model"
+	v1 "k8s.io/api/core/v1"
 	"net"
 	"net/http"
 	"net/rpc"
@@ -47,7 +48,7 @@ func fillCache(c *WatchCache) {
 
 					r := model.KubeResource{
 						model.TypeMeta{Kind: kind},
-						model.ResourceMeta{Name: ctx + "-" + name, Namespace: ns},
+						model.ResourceMeta{Name: ctx + "-" + name, Namespace: ns, Status: string(v1.PodRunning)},
 					}
 					c.resources[ctx] = append(c.resources[ctx], r)
 				}
@@ -59,7 +60,7 @@ func fillCache(c *WatchCache) {
 		for _, ns := range []string{"ns1", "ns2"} {
 			r := model.KubeResource{
 				model.TypeMeta{"namespace"},
-				model.ResourceMeta{Name: ctx + "-" + ns},
+				model.ResourceMeta{Name: ctx + "-" + ns, Status: string(v1.PodRunning)},
 			}
 			c.resources[ctx] = append(c.resources[ctx], r)
 		}
@@ -102,85 +103,85 @@ func TestClientResources(t *testing.T) {
 		{
 			filter: WatchFilter{"CTX1", "ns1", "pod"},
 			expected: []model.KubeResource{
-				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-a", "ns1", ""}},
-				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-b", "ns1", ""}},
-				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-c", "ns1", ""}},
+				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-a", "ns1", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-b", "ns1", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-c", "ns1", "", string(v1.PodRunning)}},
 			},
 		},
 		{
 			filter: WatchFilter{"ctx2", "NS1", "pod"},
 			expected: []model.KubeResource{
-				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx2-a", "ns1", ""}},
-				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx2-b", "ns1", ""}},
-				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx2-c", "ns1", ""}},
+				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx2-a", "ns1", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx2-b", "ns1", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx2-c", "ns1", "", string(v1.PodRunning)}},
 			},
 		},
 		{
 			filter: WatchFilter{"ctx1", "ns2", "POD"},
 			expected: []model.KubeResource{
-				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-a", "ns2", ""}},
-				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-b", "ns2", ""}},
-				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-c", "ns2", ""}},
+				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-a", "ns2", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-b", "ns2", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-c", "ns2", "", string(v1.PodRunning)}},
 			},
 		},
 		{
 			filter: WatchFilter{"ctx1", "ns1", "service"},
 			expected: []model.KubeResource{
-				{model.TypeMeta{"service"}, model.ResourceMeta{"ctx1-a", "ns1", ""}},
-				{model.TypeMeta{"service"}, model.ResourceMeta{"ctx1-b", "ns1", ""}},
-				{model.TypeMeta{"service"}, model.ResourceMeta{"ctx1-c", "ns1", ""}},
+				{model.TypeMeta{"service"}, model.ResourceMeta{"ctx1-a", "ns1", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"service"}, model.ResourceMeta{"ctx1-b", "ns1", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"service"}, model.ResourceMeta{"ctx1-c", "ns1", "", string(v1.PodRunning)}},
 			},
 		},
 		{
 			filter: WatchFilter{"ctx1", "ns1", "deployment"},
 			expected: []model.KubeResource{
-				{model.TypeMeta{"deployment"}, model.ResourceMeta{"ctx1-a", "ns1", ""}},
-				{model.TypeMeta{"deployment"}, model.ResourceMeta{"ctx1-b", "ns1", ""}},
-				{model.TypeMeta{"deployment"}, model.ResourceMeta{"ctx1-c", "ns1", ""}},
+				{model.TypeMeta{"deployment"}, model.ResourceMeta{"ctx1-a", "ns1", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"deployment"}, model.ResourceMeta{"ctx1-b", "ns1", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"deployment"}, model.ResourceMeta{"ctx1-c", "ns1", "",string(v1.PodRunning)}},
 			},
 		},
 		{
 			filter: WatchFilter{"", "ns1", "pod"},
 			expected: []model.KubeResource{
-				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-a", "ns1", ""}},
-				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-b", "ns1", ""}},
-				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-c", "ns1", ""}},
-				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx2-a", "ns1", ""}},
-				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx2-b", "ns1", ""}},
-				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx2-c", "ns1", ""}},
-				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx3-a", "ns1", ""}},
-				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx3-b", "ns1", ""}},
-				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx3-c", "ns1", ""}},
+				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-a", "ns1", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-b", "ns1", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-c", "ns1", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx2-a", "ns1", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx2-b", "ns1", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx2-c", "ns1", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx3-a", "ns1", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx3-b", "ns1", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx3-c", "ns1", "", string(v1.PodRunning)}},
 			},
 		},
 		{
 			filter: WatchFilter{"ctx1", "", "pod"},
 			expected: []model.KubeResource{
-				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-a", "ns1", ""}},
-				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-b", "ns1", ""}},
-				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-c", "ns1", ""}},
-				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-a", "ns2", ""}},
-				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-b", "ns2", ""}},
-				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-c", "ns2", ""}},
-				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-a", "ns3", ""}},
-				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-b", "ns3", ""}},
-				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-c", "ns3", ""}},
+				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-a", "ns1", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-b", "ns1", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-c", "ns1", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-a", "ns2", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-b", "ns2", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-c", "ns2", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-a", "ns3", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-b", "ns3", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"pod"}, model.ResourceMeta{"ctx1-c", "ns3", "", string(v1.PodRunning)}},
 			},
 		},
 		{
 			filter: WatchFilter{"ctx1", "should be ignored", "namespace"},
 			expected: []model.KubeResource{
-				{model.TypeMeta{"namespace"}, model.ResourceMeta{"ctx1-ns1", "", ""}},
-				{model.TypeMeta{"namespace"}, model.ResourceMeta{"ctx1-ns2", "", ""}},
+				{model.TypeMeta{"namespace"}, model.ResourceMeta{"ctx1-ns1", "", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"namespace"}, model.ResourceMeta{"ctx1-ns2", "", "", string(v1.PodRunning)}},
 			},
 		},
 		{
 			filter: WatchFilter{"", "should be ignored", "namespace"},
 			expected: []model.KubeResource{
-				{model.TypeMeta{"namespace"}, model.ResourceMeta{"ctx1-ns1", "", ""}},
-				{model.TypeMeta{"namespace"}, model.ResourceMeta{"ctx1-ns2", "", ""}},
-				{model.TypeMeta{"namespace"}, model.ResourceMeta{"ctx2-ns1", "", ""}},
-				{model.TypeMeta{"namespace"}, model.ResourceMeta{"ctx2-ns2", "", ""}},
+				{model.TypeMeta{"namespace"}, model.ResourceMeta{"ctx1-ns1", "", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"namespace"}, model.ResourceMeta{"ctx1-ns2", "", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"namespace"}, model.ResourceMeta{"ctx2-ns1", "", "", string(v1.PodRunning)}},
+				{model.TypeMeta{"namespace"}, model.ResourceMeta{"ctx2-ns2", "", "", string(v1.PodRunning)}},
 			},
 		},
 	}

@@ -10,6 +10,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"strings"
+
 )
 
 func AddCommonFlags(cmd *cobra.Command) {
@@ -39,6 +40,13 @@ func RunCommon(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
+
+	// if kubeconfig hasn't been set then set it to the default location
+	if strings.TrimSpace(kubeConfigFile) == "" {
+		log.Debug("Setting kubeconfig location to default")
+		kubeConfigFile = "~/.kube/config"
+	}
+
 	// if the path to the user's kubeconfig file starts with a ~ then convert this to an absolute path
 	if strings.HasPrefix(kubeConfigFile, "~/") {
 		usr, _ := user.Current()
@@ -72,3 +80,48 @@ func GetBind(cmd *cobra.Command) (string, error) {
 
 	return fmt.Sprintf("%s:%d", address, port), nil
 }
+
+// Get the substring between 2 other strings
+func StringBetween(source, start, end string) string {
+	// Get substring between two strings.
+	posFirst := strings.Index(source, start)
+	if posFirst == -1 {
+		return ""
+	}
+	posLast := strings.Index(source, end)
+	if posLast == -1 {
+		return ""
+	}
+	posFirstAdjusted := posFirst + len(start)
+	if posFirstAdjusted >= posLast {
+		return ""
+	}
+	return source[posFirstAdjusted:posLast]
+}
+
+func StringBefore(source, before string) string {
+	// Get substring before a string.
+	pos := strings.Index(source, before)
+	if pos == -1 {
+		return ""
+	}
+	return source[0:pos]
+}
+
+func StringAfter(source string, after string) string {
+	// Get substring after after string.
+	pos := strings.LastIndex(source, after)
+	if pos == -1 {
+		return ""
+	}
+	adjustedPos := pos + len(after)
+	if adjustedPos >= len(source) {
+		return ""
+	}
+	return source[adjustedPos:len(source)]
+}
+
+
+
+
+

@@ -8,6 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -66,12 +67,19 @@ func (d *DefaultKubeClient) WatchResources(context, kind string, out chan *model
 			case watch.Modified:
 				evt.Type = model.Modified
 			}
+			var status string
+			if strings.TrimSpace(pod.Status.Message) == "" {
+				status = string(pod.Status.Phase)
+			} else {
+				status = fmt.Sprintf("%s: %s",pod.Status.Phase, pod.Status.Message)
+			}
 			evt.Resource = &model.KubeResource{
 				TypeMeta:   model.TypeMeta{Kind: "pod"},
 				ResourceMeta: model.ResourceMeta{
 					Name: pod.Name,
 					Namespace: pod.Namespace,
 					ResourceVersion: pod.ResourceVersion,
+					Status: status,
 				},
 			}
 			out <- &evt
