@@ -87,7 +87,9 @@ func RunWatch(b Builder, cmd *cobra.Command, args []string) error {
 	kc := b.KubeClient(clients)
 
 	for _, arg := range args {
-		kc.Ping(arg)
+		if err := kc.Ping(arg); err != nil {
+			return fmt.Errorf("failed to ping server: %s", err)
+		}
 	}
 
 	for _, arg := range args {

@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/rpc"
 	"os"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -90,11 +91,11 @@ func (b *DefaultBuilder) WatchCache() *WatchCache {
 }
 
 func (b *DefaultBuilder) WatchClient(address string) (WatchClient, error) {
-	return NewWatchClient(address)
+	return NewWatchClient(address, reflect.TypeOf(b).String(), "")
 }
 
 func (b *DefaultBuilder) Serve(l net.Listener, cache *WatchCache) error {
-	rpc.Register(cache)
+	rpc.RegisterName(reflect.TypeOf(b).String(),cache)
 	rpc.HandleHTTP()
 	return http.Serve(l, nil)
 }

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	strUtil "github.com/agrison/go-commons-lang/stringUtils"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -141,19 +142,32 @@ type WatchClient interface {
 
 type WatchClientDefault struct {
 	conn *rpc.Client
+	builderType string
 }
 
-func NewWatchClient(address string) (*WatchClientDefault, error) {
-	connection, err := rpc.DialHTTP("tcp", address)
+func NewWatchClient(address, builderType, rpcPath string) (*WatchClientDefault, error) {
+	var connection *rpc.Client
+	var err error
+
+	if strUtil.IsBlank(rpcPath) {
+		connection, err = rpc.DialHTTP("tcp", address)
+	} else {
+		connection, err = rpc.DialHTTPPath("tcp", address, rpcPath)
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	return &WatchClientDefault{conn: connection}, nil
+	return &WatchClientDefault{
+		conn: connection,
+		builderType: builderType,
+	}, nil
 }
 
 func (wc *WatchClientDefault) Resources(f WatchFilter) ([]model.KubeResource, error) {
 	var res []model.KubeResource
-	err := wc.conn.Call("WatchCache.Resources", f, &res)
+	//err := wc.conn.Call("WatchCache.Resources", f, &res)
+	sm := wc.builderType + ".Resources"
+	err := wc.conn.Call(sm, f, &res)
 	return res, err
 }

@@ -27,14 +27,16 @@ func setupRPC() {
 	b := &DefaultBuilder{}
 	cache := b.WatchCache()
 	fillCache(cache)
-	rpc.Register(cache)
-	rpc.HandleHTTP()
+	rpc.RegisterName("*cmd.DefaultBuilder",cache)
+	rpc.DefaultServer.HandleHTTP("/rpctest","/rpcdebug")
+
 	go http.Serve(l, nil)
 
-	watchClient, err = b.WatchClient(l.Addr().String())
+	watchClient, err = NewWatchClient(l.Addr().String(), "*cmd.DefaultBuilder", "/rpctest")
 	if err != nil {
 		log.Fatalf("Failed to create WatchClient: %v", err)
 	}
+
 }
 
 func fillCache(c *WatchCache) {
