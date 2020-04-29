@@ -48,6 +48,10 @@ func (t *TestBuilder) PopulateSuggestions(resources *[]model.KubeResource) {
 	panic("implement me")
 }
 
+func (t *TestBuilder) PopulateContextSuggestions(source map[string][][]string) {
+	panic("implement me")
+}
+
 func (t *TestBuilder) KubeClient(clients map[string]kubernetes.Interface) service.KubeClient {
 	testClients := map[string]kubernetes.Interface{}
 	for key := range clients {

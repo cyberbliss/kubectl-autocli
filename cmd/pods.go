@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"autocli/model"
 	"errors"
 	"fmt"
 	"github.com/c-bata/go-prompt"
@@ -84,20 +85,21 @@ func RunPods(b Builder, cmd *cobra.Command, args []string) error {
 		return err
 	}
 	b.PopulateSuggestions(&kr)
+	populateContainerSuggestions(b, cmd.CalledAs(), &kr)
 
 	in := prompt.Input(">>> ", b.PodCompleter,
 		// Set the colours for the prompt and suggestions
 		prompt.OptionPrefixTextColor(prompt.Yellow),
 		prompt.OptionPreviewSuggestionTextColor(prompt.Blue),
 
-		prompt.OptionSelectedSuggestionBGColor(prompt.DefaultColor),
-		prompt.OptionSelectedSuggestionTextColor(prompt.Green),
+		prompt.OptionSelectedSuggestionBGColor(prompt.LightGray),
+		prompt.OptionSelectedSuggestionTextColor(prompt.DarkRed),
 
 		prompt.OptionDescriptionBGColor(prompt.White),
 		prompt.OptionDescriptionTextColor(prompt.DarkBlue),
 
-		prompt.OptionSelectedDescriptionBGColor(prompt.DefaultColor),
-		prompt.OptionSelectedDescriptionTextColor(prompt.DarkBlue),
+		prompt.OptionSelectedDescriptionBGColor(prompt.LightGray),
+		prompt.OptionSelectedDescriptionTextColor(prompt.Purple),
 		prompt.OptionSuggestionTextColor(prompt.White),
 		prompt.OptionSuggestionBGColor(prompt.DarkBlue))
 
@@ -145,6 +147,9 @@ func executor(rn, ns, args, c string) {
 	}
 }
 
+// once a pod name has been selected we want to provide context appropriate options
+// dependent on whether this cmd was called with 'pod' (to get details on the pod) or 'log'
+// (to get pod logs)
 func deriveCmdOptions(cmd string) cmdOptions {
 	if strUtil.ContainsAny(cmd, getPodAliases()...) {
 		return getPodOptions
@@ -162,4 +167,22 @@ func getPodAliases() []string {
 
 func getLogAliases() []string {
 	return []string{"logs", "log", "lo", "l"}
+}
+
+func populateContainerSuggestions(b Builder, cmd string, resources *[]model.KubeResource) {
+	if strUtil.ContainsAny(cmd, getPodAliases()...) {
+		return
+	}
+	cMap := make(map[string][][]string)
+	for _, res := range *resources {
+		key := fmt.Sprintf("%s-%s", res.Name, res.Namespace)
+		value := make([][]string,0)
+		for _, v := range res.ContainerNames {
+			value = append(value,[]string{v.Name, v.Type})
+		}
+		//value := res.ContainerNames
+		cMap[key] = value
+	}
+
+	b.PopulateContextSuggestions(cMap)
 }

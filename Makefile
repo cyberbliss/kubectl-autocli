@@ -2,7 +2,7 @@ BINARY = kubectl-ag
 
 .PHONY: test
 test:
-	go test ./... -mod=mod -v
+	go test ./... -cover -mod=mod -v
 
 .PHONY: build
 build: test

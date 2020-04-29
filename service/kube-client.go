@@ -68,11 +68,29 @@ func (d *DefaultKubeClient) WatchResources(context, kind string, out chan *model
 				evt.Type = model.Modified
 			}
 			var status string
+			var cNames []model.ContainerMeta
 			if strings.TrimSpace(pod.Status.Message) == "" {
 				status = string(pod.Status.Phase)
 			} else {
 				status = fmt.Sprintf("%s: %s",pod.Status.Phase, pod.Status.Message)
 			}
+
+			//get all the container names (including init ones if there are any)
+			if len(pod.Spec.InitContainers) > 0 {
+				for _,c := range pod.Spec.InitContainers {
+					cNames = append(cNames, model.ContainerMeta{
+						Name: c.Name,
+						Type: "Init Container",
+					})
+				}
+			}
+			for _,c := range pod.Spec.Containers {
+				cNames = append(cNames, model.ContainerMeta{
+					Name: c.Name,
+					Type: "Container",
+				})
+			}
+
 			evt.Resource = &model.KubeResource{
 				TypeMeta:   model.TypeMeta{Kind: "pod"},
 				ResourceMeta: model.ResourceMeta{
@@ -80,6 +98,7 @@ func (d *DefaultKubeClient) WatchResources(context, kind string, out chan *model
 					Namespace: pod.Namespace,
 					ResourceVersion: pod.ResourceVersion,
 					Status: status,
+					ContainerNames: cNames,
 				},
 			}
 			out <- &evt

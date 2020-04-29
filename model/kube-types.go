@@ -8,11 +8,17 @@ const (
 	Deleted  EventType = "DELETED"
 )
 
+type ContainerMeta struct {
+	Name string
+	Type string
+}
+
 type ResourceMeta struct {
 	Name            string
 	Namespace       string
 	ResourceVersion string
 	Status			string
+	ContainerNames	[]ContainerMeta
 }
 
 type TypeMeta struct {

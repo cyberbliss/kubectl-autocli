@@ -18,13 +18,13 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	strUtil "github.com/agrison/go-commons-lang/stringUtils"
-
 )
 
 type Builder interface {
 	StdOut() io.Writer
 	PodCompleter(in prompt.Document) []prompt.Suggest
 	PopulateSuggestions(resources *[]model.KubeResource)
+	PopulateContextSuggestions(source map[string][][]string)
 	KubeClient(clients map[string]kubernetes.Interface) service.KubeClient
 	WatchCache() *WatchCache
 	WatchClient(address string) (WatchClient, error)
@@ -35,6 +35,7 @@ type Builder interface {
 type DefaultBuilder struct {
 	Streams     genericclioptions.IOStreams
 	suggestions []prompt.Suggest
+	contextSuggestions map[string][]prompt.Suggest
 	cmdOptions cmdOptions
 }
 
@@ -72,10 +73,39 @@ func (b *DefaultBuilder) PopulateSuggestions(resources *[]model.KubeResource) {
 	b.suggestions = s
 }
 
+func (b *DefaultBuilder) PopulateContextSuggestions(source map[string][][]string) {
+	target := make(map[string][]prompt.Suggest)
+	for k,v := range source {
+		s := make([]prompt.Suggest, 0)
+		for _, val := range v {
+			s = append(s, prompt.Suggest{
+				Text: val[0],
+				Description: val[1],
+			})
+		}
+		target[k] = s
+	}
+
+	b.contextSuggestions = target
+}
+
 func (b *DefaultBuilder) PodCompleter(in prompt.Document) []prompt.Suggest {
 	currText := in.CurrentLineBeforeCursor()
+	//log.Debugf("pc: %s",currText)
 	podChosen := b.isNameSelected(currText)
+
+	//if a Pod name has already been selected or text then a space then don't display them again
+	//and determine what other options to display: extra flags for example
 	if podChosen || isAlreadyText(currText) {
+		//wbc := in.GetWordBeforeCursor()
+		//log.Debugf("ct: %s", currText)
+		if strings.Contains(currText, "--container") {
+			//`log.Debug("wbc true")
+			pn := StringBefore(currText, " [")
+			ns := StringBetween(currText, "[", "]")
+			key := fmt.Sprintf("%s-%s", pn, ns)
+			return b.contextSuggestions[key]
+		}
 		return b.cmdOptions()
 	}
 
@@ -135,6 +165,7 @@ func getPodOptions() []prompt.Suggest {
 func getLogOptions() []prompt.Suggest {
 	options := []prompt.Suggest{
 		{Text: "--all-containers", Description: "Get all containers' logs in the pod"},
+		{Text: "--container", Description: "Get logs for specific container"},
 		{Text: "--follow", Description: "Specify if the logs should be streamed"},
 		{Text: "--prefix",Description: "Prefix each log line with the log source (pod name and container name)"},
 		{Text: "--previous", Description: "Print the logs for the previous instance of the container in a pod if it exists"},
