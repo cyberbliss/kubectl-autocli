@@ -7,8 +7,8 @@ import (
 )
 
 var RootCmd = &cobra.Command{
-	Use: "kubectl ag",
-	Short: "kubectl ag",
+	Use: "kubectl-ag",
+	Short: "kubectl-ag",
 	SilenceUsage:true,
 }
 
@@ -17,7 +17,7 @@ func main() {
 	//rootCmd := cmd.NewGetCommand(b)
 	RootCmd.AddCommand(cmd.NewVersionCommand(b))
 	RootCmd.AddCommand(cmd.NewWatchCommand(b))
-	RootCmd.AddCommand(cmd.NewPodsCommand(b))
+	RootCmd.AddCommand(cmd.NewResourcesCommand(b))
 	if err := RootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

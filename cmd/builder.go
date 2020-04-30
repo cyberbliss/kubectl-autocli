@@ -64,8 +64,14 @@ func (b *DefaultBuilder) PopulateSuggestions(resources *[]model.KubeResource) {
 	sort.Sort(model.ByKindNSName(*resources))
 	s := make([]prompt.Suggest, 0)
 	for _, res := range *resources {
+		var text string
+		if strUtil.IsBlank(res.Namespace) {
+			text = res.Name
+		} else {
+			text = fmt.Sprintf("%s [%s]", res.Name, res.Namespace)
+		}
 		s = append(s, prompt.Suggest{
-			Text:        fmt.Sprintf("%s [%s]", res.Name, res.Namespace),
+			Text:        text,
 			Description: res.Status,
 		})
 	}
@@ -152,10 +158,11 @@ func isAlreadyText(text string) bool {
 	return false
 }
 
-func getPodOptions() []prompt.Suggest {
+func getGetOptions() []prompt.Suggest {
 	options := []prompt.Suggest {
 		{Text: "--output json", Description: "Output manifest in json format"},
 		{Text: "--output yaml", Description: "Output manifest in yaml format"},
+		{Text: "--output wide", Description: "Output more details"},
 		{Text: "--watch", Description: "After listing/getting the requested object, watch for changes"},
 	}
 
