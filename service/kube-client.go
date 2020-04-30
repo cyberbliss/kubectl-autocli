@@ -16,6 +16,7 @@ import (
 type KubeClient interface {
 	Ping(context string) error
 	WatchResources(context, kind string, out chan *model.ResourceEvent) error
+	GetResources(context, kind string) ([]model.KubeResource, error)
 }
 
 type DefaultKubeClient struct {
@@ -110,12 +111,48 @@ func (d *DefaultKubeClient) WatchResources(context, kind string, out chan *model
 	return nil
 }
 
+func (d *DefaultKubeClient) GetResources(context, kind string) ([]model.KubeResource, error) {
+	var resources []model.KubeResource
+
+	client, ok := d.clients[context]
+	if !ok {
+		return []model.KubeResource{}, fmt.Errorf("context not found: %s", context)
+	}
+
+	switch kind {
+	case "node":
+		nodes, err := d.getNodes(client)
+		if err != nil {
+			return []model.KubeResource{}, err
+		}
+		log.Debug(nodes)
+		for _, node := range nodes.Items {
+			AddToKubeResources(&resources, "node", node.Name, node.Namespace, node.ResourceVersion, determineNodeStatus(node.Status.Conditions))
+		}
+		return resources, nil
+	default:
+		return []model.KubeResource{}, fmt.Errorf("unsupported kind: %s", kind)
+	}
+}
+
 func (d *DefaultKubeClient) watchPods(client kubernetes.Interface, ns string) (out <-chan watch.Event, err error) {
 	req, err := client.CoreV1().Pods(ns).Watch(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 	return req.ResultChan(), nil
+}
+
+func (d *DefaultKubeClient) getNodes(client kubernetes.Interface) (*v1.NodeList, error) {
+	return client.CoreV1().Nodes().List(metav1.ListOptions{})
+}
+
+func (d *DefaultKubeClient) getConfigMaps(client kubernetes.Interface, ns string) (*v1.ConfigMapList, error) {
+	return client.CoreV1().ConfigMaps(ns).List(metav1.ListOptions{})
+}
+
+func (d *DefaultKubeClient) getServices(client kubernetes.Interface, ns string) (*v1.ServiceList, error) {
+	return client.CoreV1().Services(ns).List(metav1.ListOptions{})
 }
 
 func NewKubeClient(clients map[string]kubernetes.Interface) KubeClient {
@@ -125,3 +162,35 @@ func NewKubeClient(clients map[string]kubernetes.Interface) KubeClient {
 
 	return dkc
 }
+
+func AddToKubeResources(resourcesPtr *[]model.KubeResource, tm, name, ns, rv, status string) {
+	//NOTE: need to pass the KubeObject as a pointer because I'm altering the actual slice by appending to it
+	res := *resourcesPtr
+	t := model.TypeMeta{Kind: tm}
+	*resourcesPtr = append(res, model.KubeResource{
+		TypeMeta:     t,
+		ResourceMeta: model.ResourceMeta{
+			Name:            name,
+			Namespace:       ns,
+			ResourceVersion: rv,
+			Status:          status,
+			ContainerNames:  nil,
+		},
+	})
+}
+
+func determineNodeStatus(conditions []v1.NodeCondition) string {
+	var status = "Unknown"
+	for _, v := range conditions {
+		if v.Type == v1.NodeReady {
+			if v.Status == v1.ConditionTrue {
+				status = "Ready"
+				break
+			}
+		}
+	}
+
+	return status
+}
+
+

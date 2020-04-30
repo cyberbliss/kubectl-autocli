@@ -59,4 +59,13 @@ func TestRunWatch(t *testing.T) {
 	assert.Equal(t, "pod", kr[0].Kind)
 	assert.Equal(t, "ns2-pod", kr[0].Name)
 	assert.Equal(t, "ns2", kr[0].Namespace)
+
+	wf = makeFilter("prod", "", "node")
+	kr, err = client.Resources(wf)
+	if err != nil {
+		t.Error(err)
+	}
+	assert.Equal(t, 2, len(kr))
+	assert.Equal(t, "prodnode2", kr[1].Name)
+	assert.Equal(t, "NotReady", kr[1].Status)
 }

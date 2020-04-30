@@ -95,6 +95,30 @@ type TestKubeClient struct {
 	watchObjectLock  *sync.RWMutex
 }
 
+func (t TestKubeClient) GetResources(context, kind string) ([]model.KubeResource, error) {
+	var resources []model.KubeResource
+
+	if context == "prod" {
+		switch kind {
+		case "node":
+			service.AddToKubeResources(&resources, "node", "prodnode1", "", "", "Ready")
+			service.AddToKubeResources(&resources, "node", "prodnode2", "", "", "NotReady")
+
+		}
+	} else if context == "dev"{
+		switch kind {
+		case "node":
+			service.AddToKubeResources(&resources, "node", "devnode1", "", "", "Ready")
+			service.AddToKubeResources(&resources, "node", "devnode2", "", "", "NotReady")
+
+		}
+	} else {
+		return []model.KubeResource{}, fmt.Errorf("context not found: %s", context)
+	}
+
+	return resources, nil
+}
+
 func (t TestKubeClient) Ping(context string) error {
 	return nil
 }

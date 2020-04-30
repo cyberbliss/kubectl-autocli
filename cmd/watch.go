@@ -55,10 +55,10 @@ func RunWatch(b Builder, cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to bind on %s: %v", bind, err)
 	}
 
-	//interval, err := cmd.Flags().GetDuration("interval")
-	//if err != nil {
-	//	return errors.New("could not parse value of --interval")
-	//}
+	interval, err := cmd.Flags().GetDuration("interval")
+	if err != nil {
+		return errors.New("could not parse value of --interval")
+	}
 
 	enabledResources, err := cmd.Flags().GetString("only")
 	if err != nil {
@@ -86,16 +86,22 @@ func RunWatch(b Builder, cmd *cobra.Command, args []string) error {
 
 	kc := b.KubeClient(clients)
 
-	for _, arg := range args {
-		if err := kc.Ping(arg); err != nil {
+	for _, ctx := range args {
+		if err := kc.Ping(ctx); err != nil {
 			return fmt.Errorf("failed to ping server: %s", err)
 		}
 	}
 
-	for _, arg := range args {
+	for _, ctx := range args {
 		for _, watchResource := range []string{"pod"} {
 			if isWatching(watchResource, enabledResources) {
-				loopWatchObjects(c, kc, watchResource, arg)
+				loopWatchObjects(c, kc, watchResource, ctx)
+			}
+		}
+
+		for _, getResource := range []string{"node"} {
+			if isWatching(getResource, enabledResources) {
+				loopGetObjects(c, kc, getResource, ctx, interval)
 			}
 		}
 	}
@@ -150,5 +156,31 @@ func loopWatchObjects(c *WatchCache, kc service.KubeClient, kind, context string
 	}
 
 	go watch()
+	go update()
+}
+
+func loopGetObjects(c *WatchCache, kc service.KubeClient, kind, context string, interval time.Duration) {
+	l := log.WithField("kind", kind).WithField("context", context)
+	update := func() {
+		for {
+			l.Info("updating resource...")
+			resources, err := kc.GetResources(context, kind)
+			if err != nil {
+				l.WithField("error", err).Error("unexpected error while updating resources")
+				time.Sleep(10 * time.Second)
+				continue
+			}
+
+			l.WithField("resources", resources).Debug("received resources")
+			c.deleteKubeObjects(context, kind)
+			for i := range resources {
+				c.updateKubeObject(context, resources[i])
+			}
+			l.Infof("put %d resources into cache", len(resources))
+
+			time.Sleep(interval)
+		}
+	}
+
 	go update()
 }
