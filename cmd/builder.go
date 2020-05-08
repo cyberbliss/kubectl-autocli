@@ -4,20 +4,25 @@ import (
 	"autocli/model"
 	"autocli/service"
 	"fmt"
+	"github.com/c-bata/go-prompt"
+
 	"io"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/client-go/kubernetes"
 	"net"
 	"net/http"
 	"net/rpc"
 	"os"
+	"os/exec"
 	"reflect"
 	"sort"
 	"strings"
-
-	"github.com/c-bata/go-prompt"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/client-go/kubernetes"
+	"syscall"
+	"time"
 
 	strUtil "github.com/agrison/go-commons-lang/stringUtils"
+	"github.com/cenkalti/backoff"
+	log "github.com/sirupsen/logrus"
 )
 
 type Builder interface {
@@ -27,7 +32,7 @@ type Builder interface {
 	PopulateContextSuggestions(source map[string][][]string)
 	KubeClient(clients map[string]kubernetes.Interface) service.KubeClient
 	WatchCache() *WatchCache
-	WatchClient(address string) (WatchClient, error)
+	WatchClient(address, logLvlArg, kubeConfigArg, kubeCtxArg string) (WatchClient, error)
 	Serve(l net.Listener, c *WatchCache) error
 	SetCmdOptions(cmdoptions cmdOptions)
 }
@@ -126,8 +131,68 @@ func (b *DefaultBuilder) WatchCache() *WatchCache {
 	return NewWatchCache()
 }
 
-func (b *DefaultBuilder) WatchClient(address string) (WatchClient, error) {
-	return NewWatchClient(address, reflect.TypeOf(b).String(), "")
+/*
+Connect to the Watch server - if its not running then start it and wait for it
+to cache resource entries from the Kube clusters
+ */
+func (b *DefaultBuilder) WatchClient(address, logLvlArg, kubeConfigArg, kubeCtxArg string) (WatchClient, error) {
+	//Declaring these explicitly because of the exponential backoff function later on
+	var (
+		dwc *WatchClientDefault
+		err error
+	)
+
+	dwc, err = NewWatchClient(address, reflect.TypeOf(b).String(), "")
+	// creating the client was successful, meaning the Watch server is already running
+	// so just return it
+	if err == nil {
+		resc, err := dwc.Status(kubeCtxArg)
+		if err != nil {
+			return nil, err
+		}
+		log.Debugf("Watch server running; %d resources counted for context: %s", resc, kubeCtxArg)
+		return dwc, nil
+	}
+
+	// a connection refused error means the Watch server isn't running - any other
+	// error means a different problem to return the error
+	if !strings.Contains(err.Error(), "connection refused") {
+		return nil, err
+	}
+
+	// launch the Watch cmd in a separate process
+	log.Debugf("launching Watch server for context %s", kubeCtxArg)
+	if err = launchWatchCmd(logLvlArg, kubeConfigArg, kubeCtxArg); err != nil {
+		return nil, err
+	}
+
+	/*
+	Use exponential backoff to call a status operation - if the status returns nothing then return error, so the
+	operation gets called again until no error or the retry limit is reached
+	NOTE: dwc.Status(kubeCtxArg) will return either an error or number of resources
+
+	3. If err != nil then status still failed so return error
+	4. Else call NewWatchClient again
+	 */
+	boff := backoff.NewExponentialBackOff()
+	boff.MaxElapsedTime = 10 * time.Second
+	err = backoff.Retry(func() error {
+		dwc, err = NewWatchClient(address, reflect.TypeOf(b).String(), "")
+		if err != nil {
+			return err
+		}
+		i, err := dwc.Status(kubeCtxArg)
+		if err == nil {
+			log.Debugf("res: %d", i)
+		}
+		return err
+	}, boff)
+
+	return dwc, err
+	//if err != nil {
+	//	return nil, err
+	//}
+	//return NewWatchClient(address, reflect.TypeOf(b).String(), "")
 }
 
 func (b *DefaultBuilder) Serve(l net.Listener, cache *WatchCache) error {
@@ -184,4 +249,25 @@ func getLogOptions() []prompt.Suggest {
 
 func getDefaultOptions() []prompt.Suggest {
 	return []prompt.Suggest{}
+}
+
+func launchWatchCmd(logLvlArg, kubeConfigArg, kubeCtxArg string) error {
+	cmd := exec.Command(
+		"/Users/stevejudd/dev_work/kubectl-autocli/releases/darwin/kubectl-ag",
+		"watch",
+		"--syslog",
+		logLvlArg,
+		"--kubeconfig",
+		kubeConfigArg,
+		kubeCtxArg)
+	var sysproc = &syscall.SysProcAttr{
+		Setpgid: true,
+	}
+	cmd.SysProcAttr = sysproc
+	err := cmd.Start()
+	if err != nil {
+		return fmt.Errorf("failed to execute Watch cmd in separate process: %s",err)
+	}
+
+	return nil
 }

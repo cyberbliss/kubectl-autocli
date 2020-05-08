@@ -24,6 +24,7 @@ func NewWatchCommand(b Builder) *cobra.Command {
 		Args:         cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := RunCommon(cmd); err != nil {
+				log.Error(err)
 				return err
 			}
 			return RunWatch(b, cmd, args)
@@ -42,27 +43,36 @@ func RunWatch(b Builder, cmd *cobra.Command, args []string) error {
 
 	kubeConfigFile, err := cmd.Flags().GetString("kubeconfig")
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
 	bind, err := GetBind(cmd)
 	if err != nil {
-		return fmt.Errorf("unexpected error: %s", err)
+		msg := fmt.Sprintf("failed to generate watch server bind address: %s", err)
+		log.Error(msg)
+		return errors.New(msg)
 	}
 
 	l, err := net.Listen("tcp", bind)
 	if err != nil {
-		return fmt.Errorf("failed to bind on %s: %v", bind, err)
+		msg := fmt.Sprintf("failed to bind on %s: %v", bind, err)
+		log.Error(msg)
+		return errors.New(msg)
 	}
 
 	interval, err := cmd.Flags().GetDuration("interval")
 	if err != nil {
-		return errors.New("could not parse value of --interval")
+		msg := fmt.Sprintf("could not parse value of --interval")
+		log.Error(msg)
+		return errors.New(msg)
 	}
 
 	enabledResources, err := cmd.Flags().GetString("only")
 	if err != nil {
-		return errors.New("could not parse value of --only")
+		msg := fmt.Sprintf("could not parse value of --only")
+		log.Error(msg)
+		return errors.New(msg)
 	}
 
 	c := b.WatchCache()
@@ -70,10 +80,13 @@ func RunWatch(b Builder, cmd *cobra.Command, args []string) error {
 	for _, arg := range args {
 		cc, err := BuildConfigFromFlags(arg, kubeConfigFile)
 		if err != nil {
+			log.Error(err)
 			return err
 		}
+
 		clientset, err := kubernetes.NewForConfig(cc)
 		if err != nil {
+			log.Error(err)
 			return err
 		}
 		clients[arg] = clientset
@@ -88,7 +101,9 @@ func RunWatch(b Builder, cmd *cobra.Command, args []string) error {
 
 	for _, ctx := range args {
 		if err := kc.Ping(ctx); err != nil {
-			return fmt.Errorf("failed to ping server: %s", err)
+			msg := fmt.Sprintf("failed to ping server: %s", err)
+			log.Error(msg)
+			return errors.New(msg)
 		}
 	}
 

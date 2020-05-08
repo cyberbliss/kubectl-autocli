@@ -19,6 +19,7 @@ func AddCommonFlags(cmd *cobra.Command) {
 	cmd.Flags().String("kubeconfig", "~/.kube/config", "Path to the kubeconfig file")
 	cmd.Flags().BoolP("info", "i", false, "Enables verbose output")
 	cmd.Flags().BoolP("verbose", "v", false, "Enables very verbose output")
+	cmd.Flags().Bool("syslog", false, "Send log output to syslog")
 }
 
 func RunCommon(cmd *cobra.Command) error {
@@ -34,6 +35,12 @@ func RunCommon(cmd *cobra.Command) error {
 		return err
 	} else if isVeryVerbose {
 		service.EnableVeryVerbose()
+	}
+	enableSyslog, err := cmd.Flags().GetBool("syslog")
+	if err != nil {
+		return err
+	} else if enableSyslog {
+		service.EnableSysLog()
 	}
 
 	kubeConfigFile, err := cmd.Flags().GetString("kubeconfig")

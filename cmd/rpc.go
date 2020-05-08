@@ -11,6 +11,7 @@ import (
 
 	strUtil "github.com/agrison/go-commons-lang/stringUtils"
 	log "github.com/sirupsen/logrus"
+
 )
 
 type WatchCache struct {
@@ -96,7 +97,7 @@ func (c *WatchCache) Resources(f *WatchFilter, kr *[]model.KubeResource) error {
 	log.WithField("filter", f).Debug("Received request for resources")
 
 	if f == nil {
-		return errors.New("Cannot find resources with nil filter")
+		return errors.New("cannot find resources with nil filter")
 	}
 
 	keys := []string{}
@@ -129,6 +130,21 @@ func (c *WatchCache) Resources(f *WatchFilter, kr *[]model.KubeResource) error {
 	return nil
 }
 
+func (c *WatchCache) Status(ctx *string, ct *int) error {
+	log.WithField("context", ctx).Debug("Received request for status")
+	if strUtil.IsBlank(*ctx) {
+		return errors.New("context cannot be blank")
+	}
+
+	if res, exists := c.resources[*ctx]; exists {
+		*ct = len(res)
+		return nil
+	} else {
+		return fmt.Errorf("kube context %s not found", *ctx)
+	}
+
+}
+
 func NewWatchCache() *WatchCache {
 	c := &WatchCache{}
 	c.mu = &sync.RWMutex{}
@@ -138,6 +154,7 @@ func NewWatchCache() *WatchCache {
 
 type WatchClient interface {
 	Resources(f WatchFilter) ([]model.KubeResource, error)
+	Status(c string) (int, error)
 }
 
 type WatchClientDefault struct {
@@ -170,4 +187,12 @@ func (wc *WatchClientDefault) Resources(f WatchFilter) ([]model.KubeResource, er
 	sm := wc.builderType + ".Resources"
 	err := wc.conn.Call(sm, f, &res)
 	return res, err
+}
+
+func (wc *WatchClientDefault) Status(c string) (int, error) {
+	log.Debug("in status")
+	var resourceCount int
+	sm := wc.builderType + ".Status"
+	err := wc.conn.Call(sm, c, &resourceCount)
+	return resourceCount, err
 }

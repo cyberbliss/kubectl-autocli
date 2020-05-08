@@ -23,7 +23,7 @@ func TestRunWatch(t *testing.T) {
 		t.Errorf("unexpected error: %s", err)
 	}
 
-	client, err := b.WatchClient(bind)
+	client, err := b.WatchClient(bind, "", "", "")
 	if err != nil {
 		t.Errorf("could not create client to autocli: %s", err)
 	}

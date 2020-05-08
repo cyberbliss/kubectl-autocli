@@ -70,7 +70,7 @@ func (t *TestBuilder) WatchCache() *WatchCache {
 	return NewWatchCache()
 }
 
-func (t *TestBuilder) WatchClient(address string) (WatchClient, error) {
+func (t *TestBuilder) WatchClient(address, logLvlArg, kubeConfigArg, kubeCtxArg string) (WatchClient, error) {
 	return NewWatchClient(address, reflect.TypeOf(t).String(), "")
 }
 

@@ -4,15 +4,14 @@ import (
 	"autocli/model"
 	"errors"
 	"fmt"
-	"github.com/c-bata/go-prompt"
-	"os"
-	"os/exec"
-	"strings"
-
 	strUtil "github.com/agrison/go-commons-lang/stringUtils"
+	"github.com/c-bata/go-prompt"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/tools/clientcmd"
+	"os"
+	"os/exec"
+	"strings"
 )
 
 func NewResourcesCommand(b Builder) *cobra.Command {
@@ -89,9 +88,18 @@ func RunResources(b Builder, cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("unexpected error: %s", err)
 	}
 
-	client, err := b.WatchClient(bind)
+	isVerbose := false
+	isVeryVerbose := false
+	logLvlArg := ""
+	isVerbose, _ = cmd.Flags().GetBool("info")
+	isVeryVerbose, _ = cmd.Flags().GetBool("verbose")
+	if isVerbose || isVeryVerbose {
+		logLvlArg = "--info"
+	}
+
+	client, err := b.WatchClient(bind, logLvlArg, kubeConfigFile, context)
 	if err != nil {
-		return fmt.Errorf("could not create client to autocli: %s", err)
+		return err
 	}
 
 	wf := makeFilter(context, ns, realKind(cmd.CalledAs()))
@@ -268,3 +276,4 @@ func getResourcesAliases() []string {
 	aliases = append(aliases, getNodeAliases()...)
 	return aliases
 }
+

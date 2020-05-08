@@ -197,6 +197,37 @@ func TestClientResources(t *testing.T) {
 	}
 }
 
+func TestClientStatus(t *testing.T) {
+	once.Do(setupRPC)
+
+	tests := []struct {
+		ctx string
+		expected int
+		isError bool
+	}{
+		{
+			ctx: "",
+			isError: true,
+		},
+		{
+			ctx: "context_other",
+			isError: true,
+		},
+		{
+			ctx: "ctx1",
+			expected: 29,
+		},
+	}
+
+	for _, test := range tests {
+		actual, err := watchClient.Status(test.ctx)
+		if !test.isError && err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+		assert.Equal(t, test.expected, actual)
+	}
+}
+
 func TestDeleteKubeObjects(t *testing.T) {
 	c := NewWatchCache()
 	s := "s"
