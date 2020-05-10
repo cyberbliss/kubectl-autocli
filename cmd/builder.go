@@ -146,11 +146,11 @@ func (b *DefaultBuilder) WatchClient(address, logLvlArg, kubeConfigArg, kubeCtxA
 	// creating the client was successful, meaning the Watch server is already running
 	// so just return it
 	if err == nil {
-		resc, err := dwc.Status(kubeCtxArg)
+		_, err := dwc.Status(kubeCtxArg)
 		if err != nil {
 			return nil, err
 		}
-		log.Debugf("Watch server running; %d resources counted for context: %s", resc, kubeCtxArg)
+
 		return dwc, nil
 	}
 
@@ -163,36 +163,29 @@ func (b *DefaultBuilder) WatchClient(address, logLvlArg, kubeConfigArg, kubeCtxA
 	// launch the Watch cmd in a separate process
 	log.Debugf("launching Watch server for context %s", kubeCtxArg)
 	if err = launchWatchCmd(logLvlArg, kubeConfigArg, kubeCtxArg); err != nil {
+		log.Errorf("Failed to launch Watch server: %s", err)
 		return nil, err
 	}
 
 	/*
-	Use exponential backoff to call a status operation - if the status returns nothing then return error, so the
-	operation gets called again until no error or the retry limit is reached
-	NOTE: dwc.Status(kubeCtxArg) will return either an error or number of resources
-
-	3. If err != nil then status still failed so return error
-	4. Else call NewWatchClient again
+	Use exponential backoff to create a Watch client and check its status - if either
+	returns an error then the backoff operation is called again. This is repeated (after an
+	increasingly lengthy wait) until either the client creation and status check are successful
+	or the retry time period is exceeded.
 	 */
 	boff := backoff.NewExponentialBackOff()
-	boff.MaxElapsedTime = 10 * time.Second
+	boff.MaxElapsedTime = 10 * time.Second //max time to wait for the Watch server to start serving Kube resources
 	err = backoff.Retry(func() error {
 		dwc, err = NewWatchClient(address, reflect.TypeOf(b).String(), "")
 		if err != nil {
 			return err
 		}
-		i, err := dwc.Status(kubeCtxArg)
-		if err == nil {
-			log.Debugf("res: %d", i)
-		}
+		_, err := dwc.Status(kubeCtxArg)
 		return err
 	}, boff)
 
 	return dwc, err
-	//if err != nil {
-	//	return nil, err
-	//}
-	//return NewWatchClient(address, reflect.TypeOf(b).String(), "")
+
 }
 
 func (b *DefaultBuilder) Serve(l net.Listener, cache *WatchCache) error {

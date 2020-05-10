@@ -190,9 +190,11 @@ func (wc *WatchClientDefault) Resources(f WatchFilter) ([]model.KubeResource, er
 }
 
 func (wc *WatchClientDefault) Status(c string) (int, error) {
-	log.Debug("in status")
 	var resourceCount int
 	sm := wc.builderType + ".Status"
 	err := wc.conn.Call(sm, c, &resourceCount)
+	if err == nil && log.IsLevelEnabled(log.DebugLevel) {
+		log.Debugf("Watch server running; %d resources counted for context: %s", resourceCount, c)
+	}
 	return resourceCount, err
 }

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"autocli/model"
+	"autocli/service"
 	"errors"
 	"fmt"
 	strUtil "github.com/agrison/go-commons-lang/stringUtils"
@@ -24,6 +25,7 @@ DESCRIPTION
 	the list of names and TAB or UP/DOWN to select one. Once you have selected
 	a name either hit ENTER to execute 'kubectl get' for the selected resource
 	or SPACE to select a further context sensitive argument from a list.
+	If a context is not specified then the active context from kubeconfig will be used.
 
 	Supported resources are:
 		- pod, po, p (the default)
@@ -68,6 +70,9 @@ func RunResources(b Builder, cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		// use the active context from kubeconfig
 		context = kubeConfig.CurrentContext
+		if strUtil.IsBlank(context) {
+			return fmt.Errorf("couldn't determine active context; please specify one")
+		}
 	} else {
 		// check that the specified context exists, if so use it
 		if _, ok := kubeConfig.Clusters[args[0]]; ok {
@@ -115,26 +120,33 @@ func RunResources(b Builder, cmd *cobra.Command, args []string) error {
 	}
 
 	prefix := fmt.Sprintf("[%s] >> ", kreq)
-
+	writer := service.NewStdoutWriter()
 	in := prompt.Input(prefix, b.PodCompleter,
+		prompt.OptionWriter(writer),
+		prompt.OptionShowCompletionAtStart(),
 		// Set the colours for the prompt and suggestions
-		prompt.OptionPrefixTextColor(prompt.Yellow),
-		prompt.OptionPreviewSuggestionTextColor(prompt.Blue),
+		prompt.OptionPrefixTextColor(service.Themes["light"].OptionPrefixTextColor),
+		prompt.OptionPrefixBackgroundColor(service.Themes["light"].OptionPrefixBackgroundColor),
+		prompt.OptionPreviewSuggestionBGColor(service.Themes["light"].OptionPreviewSuggestionBGColor),
+		prompt.OptionPreviewSuggestionTextColor(service.Themes["light"].OptionPreviewSuggestionTextColor),
+		prompt.OptionInputBGColor(service.Themes["light"].OptionInputBGColor),
+		prompt.OptionInputTextColor(service.Themes["light"].OptionInputTextColor),
+		prompt.OptionScrollbarBGColor(service.Themes["light"].OptionScrollbarBGColor),
+		prompt.OptionScrollbarThumbColor(service.Themes["light"].OptionScrollbarThumbColor),
+		prompt.OptionSelectedSuggestionBGColor(service.Themes["light"].OptionSelectedSuggestionBGColor),
+		prompt.OptionSelectedSuggestionTextColor(service.Themes["light"].OptionSelectedSuggestionTextColor),
 
-		prompt.OptionSelectedSuggestionBGColor(prompt.LightGray),
-		prompt.OptionSelectedSuggestionTextColor(prompt.DarkRed),
+		prompt.OptionDescriptionBGColor(service.Themes["light"].OptionDescriptionBGColor),
+		prompt.OptionDescriptionTextColor(service.Themes["light"].OptionDescriptionTextColor),
 
-		prompt.OptionDescriptionBGColor(prompt.White),
-		prompt.OptionDescriptionTextColor(prompt.DarkBlue),
+		prompt.OptionSelectedDescriptionBGColor(service.Themes["light"].OptionSelectedDescriptionBGColor),
+		prompt.OptionSelectedDescriptionTextColor(service.Themes["light"].OptionSelectedDescriptionTextColor),
 
-		prompt.OptionSelectedDescriptionBGColor(prompt.LightGray),
-		prompt.OptionSelectedDescriptionTextColor(prompt.Purple),
-		prompt.OptionSuggestionTextColor(prompt.White),
-		prompt.OptionSuggestionBGColor(prompt.DarkBlue))
+		prompt.OptionSuggestionTextColor(service.Themes["light"].OptionSuggestionTextColor),
+		prompt.OptionSuggestionBGColor(service.Themes["light"].OptionSuggestionBGColor))
 
 	log.Debugf("Your input: %s", in)
 	if strUtil.IsNotBlank(in) {
-		//executor(StringBefore(in, " ["), StringBetween(in, "[", "]"), StringAfter(in, "]"), cmd.CalledAs())
 		executor(kreq, in)
 	}
 	return nil
