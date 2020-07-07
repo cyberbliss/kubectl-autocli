@@ -1,0 +1,45 @@
+# Make sure to check the documentation at http://goreleaser.com
+before:
+  hooks:
+    # You may remove this if you don't use go modules.
+    - go mod download
+
+builds:
+- env:
+    - CGO_ENABLED=0
+  goarch:
+    - amd64
+  binary: kubectl-ag
+archives:
+- replacements:
+    darwin: Darwin
+    linux: Linux
+    windows: Windows
+    386: i386
+    amd64: x86_64
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'
+brews:
+  -
+    name: kubectl-ag
+    github:
+      owner: cyberbliss
+      name: homebrew-tap
+    commit_author:
+      name: cyberbliss
+      email: stephen.judd@gmail.com
+    folder: Formula
+    homepage: "https://github.com/cyberbliss/kubectl-autocli"
+    description: "An autocomplete wrapper for kubectl"
+    test: |
+      system "#{bin}/kubectl-ag version"
+    install: |
+      bin.install "kubectl-ag"
