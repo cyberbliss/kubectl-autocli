@@ -17,8 +17,8 @@ type ResourceMeta struct {
 	Name            string
 	Namespace       string
 	ResourceVersion string
-	Status			string
-	ContainerNames	[]ContainerMeta
+	Status          string
+	ContainerNames  []ContainerMeta
 }
 
 type TypeMeta struct {
@@ -31,7 +31,7 @@ type KubeResource struct {
 }
 
 type ResourceEvent struct {
-	Type   EventType
+	Type     EventType
 	Resource *KubeResource
 }
 
@@ -63,4 +63,3 @@ func (kresources ByKindNSName) Less(i, j int) bool {
 	}
 	return kresources[i].Name < kresources[j].Name
 }
-

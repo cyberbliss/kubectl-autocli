@@ -52,7 +52,7 @@ DESCRIPTION
 }
 
 func RunResources(b Builder, cmd *cobra.Command, args []string) error {
-	var context, proxyUrl string
+	var context, proxyURL string
 
 	b.SetCmdOptions(deriveCmdOptions(cmd.CalledAs()))
 
@@ -74,19 +74,19 @@ func RunResources(b Builder, cmd *cobra.Command, args []string) error {
 		if strUtil.IsBlank(context) {
 			return fmt.Errorf("couldn't determine active context; please specify one")
 		}
-		proxyUrl = kubeConfig.Clusters[context].ProxyURL
+		proxyURL = kubeConfig.Clusters[context].ProxyURL
 	} else {
 		// check that the specified context exists, if so use it
 		if cluster, ok := kubeConfig.Clusters[args[0]]; ok {
 			context = args[0]
-			proxyUrl = cluster.ProxyURL
+			proxyURL = cluster.ProxyURL
 		} else {
 			return fmt.Errorf("unknown context: %s", args[0])
 		}
 	}
 
 	if val, _ := cmd.Flags().GetBool("setproxy"); !val {
-		proxyUrl = ""
+		proxyURL = ""
 	}
 
 	ns, err := cmd.Flags().GetString("namespace")
@@ -154,7 +154,7 @@ func RunResources(b Builder, cmd *cobra.Command, args []string) error {
 
 	log.Debugf("Your input: %s", in)
 	if strUtil.IsNotBlank(in) {
-		executor(context, kreq, in, proxyUrl)
+		executor(context, kreq, in, proxyURL)
 	}
 	return nil
 }
@@ -172,19 +172,19 @@ func makeFilter(context, ns, kind string) WatchFilter {
 
 	return wf
 }
-func executor(ctx, kind, in, proxyUrl string) {
+func executor(ctx, kind, in, proxyURL string) {
 
 	var cmdArgs []string
 	input := strings.Split(in, " ")
 	switch kind {
-	case "pod","log":
+	case "pod", "log":
 		ns := StringBetween(input[1], "[", "]")
 		if kind == "log" {
 			cmdArgs = []string{"logs"}
 		} else {
-			cmdArgs = []string{"get",kind}
+			cmdArgs = []string{"get", kind}
 		}
-		cmdArgs = append(cmdArgs, input[0],"--namespace",ns)
+		cmdArgs = append(cmdArgs, input[0], "--namespace", ns)
 		if len(input) > 2 {
 			cmdArgs = append(cmdArgs, input[2:]...)
 		}
@@ -192,12 +192,12 @@ func executor(ctx, kind, in, proxyUrl string) {
 		cmdArgs = []string{"get", kind}
 		cmdArgs = append(cmdArgs, input...)
 	}
-	cmdArgs = append(cmdArgs, "--context", fmt.Sprintf("%s",ctx))
+	cmdArgs = append(cmdArgs, "--context", fmt.Sprintf("%s", ctx))
 	log.Debug(cmdArgs)
 	cmd := exec.Command("kubectl", cmdArgs...)
-	if proxyUrl != "" {
+	if proxyURL != "" {
 		cmd.Env = os.Environ()
-		cmd.Env = append(cmd.Env, "HTTPS_PROXY="+proxyUrl)
+		cmd.Env = append(cmd.Env, "HTTPS_PROXY="+proxyURL)
 	}
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
@@ -207,7 +207,6 @@ func executor(ctx, kind, in, proxyUrl string) {
 		log.Fatalf("failed with %s\n", err)
 	}
 }
-
 
 // once a pod name has been selected we want to provide context appropriate options
 // dependent on whether this cmd was called with 'pod' (to get details on the pod) or 'log'
@@ -247,7 +246,7 @@ func deriveKindRequired(cmd string) string {
 }
 
 func getPodAliases() []string {
-	return []string{"pod","p", "po"}
+	return []string{"pod", "p", "po"}
 }
 
 func getLogAliases() []string {
@@ -262,9 +261,9 @@ func populateContainerSuggestions(b Builder, cmd string, resources *[]model.Kube
 	cMap := make(map[string][][]string)
 	for _, res := range *resources {
 		key := fmt.Sprintf("%s-%s", res.Name, res.Namespace)
-		value := make([][]string,0)
+		value := make([][]string, 0)
 		for _, v := range res.ContainerNames {
-			value = append(value,[]string{v.Name, v.Type})
+			value = append(value, []string{v.Name, v.Type})
 		}
 		//value := res.ContainerNames
 		cMap[key] = value
@@ -280,4 +279,3 @@ func getResourcesAliases() []string {
 	aliases = append(aliases, getNodeAliases()...)
 	return aliases
 }
-

@@ -9,7 +9,7 @@ builds:
     - CGO_ENABLED=0
   goarch:
     - amd64
-  binary: kubectl-ag
+  binary: kubectl-ac
 archives:
 - replacements:
     darwin: Darwin
@@ -29,8 +29,8 @@ changelog:
     - '^test:'
 brews:
   -
-    name: kubectl-ag
-    github:
+    name: kubectl-ac
+    tap:
       owner: cyberbliss
       name: homebrew-tap
     commit_author:
@@ -40,6 +40,6 @@ brews:
     homepage: "https://github.com/cyberbliss/kubectl-autocli"
     description: "An autocomplete wrapper for kubectl"
     test: |
-      system "#{bin}/kubectl-ag version"
+      system "#{bin}/kubectl-ac version"
     install: |
-      bin.install "kubectl-ag"
+      bin.install "kubectl-ac"

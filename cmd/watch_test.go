@@ -9,7 +9,7 @@ import (
 
 func TestRunWatch(t *testing.T) {
 	b := NewTestBuilder()
-	servers := []string{"prod","dev"}
+	servers := []string{"prod", "dev"}
 	cmd := NewWatchCommand(b)
 	cmd.Flags().Set("kubeconfig", "test_data/kubeconfig_valid")
 	cmd.Flags().Set("port", "33044")
@@ -27,7 +27,7 @@ func TestRunWatch(t *testing.T) {
 	if err != nil {
 		t.Errorf("could not create client to autocli: %s", err)
 	}
-	wf := makeFilter("prod", "","pod")
+	wf := makeFilter("prod", "", "pod")
 	var kr []model.KubeResource
 	for {
 		kr, err = client.Resources(wf)
@@ -44,7 +44,7 @@ func TestRunWatch(t *testing.T) {
 	assert.Equal(t, "ns1-pod", kr[0].Name)
 	assert.Equal(t, "ns1", kr[0].Namespace)
 
-	wf = makeFilter("dev", "ns2","pod")
+	wf = makeFilter("dev", "ns2", "pod")
 	for {
 		kr, err = client.Resources(wf)
 		if err != nil {

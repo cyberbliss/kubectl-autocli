@@ -7,9 +7,9 @@ import (
 )
 
 var RootCmd = &cobra.Command{
-	Use: "kubectl-ag",
-	Short: "kubectl-ag",
-	SilenceUsage:true,
+	Use:          "kubectl-ac",
+	Short:        "kubectl-ac",
+	SilenceUsage: true,
 }
 
 func main() {

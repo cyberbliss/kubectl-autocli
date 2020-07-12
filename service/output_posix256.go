@@ -20,7 +20,7 @@ const flushMaxRetryCount = 3
 // The reason for this struct is that supports the 256 colour escape sequences rather than the 16 ANSI ones
 
 type PosixWriter256 struct {
-	fd int
+	fd     int
 	buffer []byte
 }
 
@@ -29,6 +29,7 @@ func (w *PosixWriter256) WriteRaw(data []byte) {
 	w.buffer = append(w.buffer, data...)
 	return
 }
+
 // Flush to flush buffer
 func (w *PosixWriter256) Flush() error {
 	l := len(w.buffer)
@@ -308,7 +309,7 @@ func (w *PosixWriter256) SetDisplayAttributes(fg, bg prompt.Color, attrs ...prom
 	if bg == 0 {
 		b = []byte{'4', '9'}
 	} else {
-		b = []byte{'4','8',separator,'5',separator}
+		b = []byte{'4', '8', separator, '5', separator}
 		b = append(b, Color2Byte(bg)...)
 	}
 
@@ -381,7 +382,6 @@ var displayAttributeParameters = map[prompt.DisplayAttribute][]byte{
 //	prompt.White:     {'1', '0', '7'},
 //}
 
-
 var _ prompt.ConsoleWriter = &PosixWriter256{}
 
 // NewStdoutWriter returns ConsoleWriter object to write to stdout.
@@ -405,4 +405,3 @@ func NewStderrWriter() prompt.ConsoleWriter {
 func Color2Byte(src prompt.Color) []byte {
 	return []byte(strconv.Itoa(int(src)))
 }
-

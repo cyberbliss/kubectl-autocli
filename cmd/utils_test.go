@@ -7,14 +7,14 @@ import (
 
 func TestStringBetween(t *testing.T) {
 	source := "mypod [mynamespace]"
-	actual := StringBetween(source, "[","]")
+	actual := StringBetween(source, "[", "]")
 	expected := "mynamespace"
 	assert.Equal(t, expected, actual)
 }
 
 func TestInvalidStringBetween(t *testing.T) {
 	source := "mypod [mynamespace]"
-	actual := StringBetween(source, "##","]")
+	actual := StringBetween(source, "##", "]")
 	expected := ""
 	assert.Equal(t, expected, actual)
 }

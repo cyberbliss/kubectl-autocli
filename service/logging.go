@@ -5,7 +5,6 @@ import (
 	"os"
 
 	log "github.com/sirupsen/logrus"
-
 )
 
 func init() {

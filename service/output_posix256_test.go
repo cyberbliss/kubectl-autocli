@@ -1,7 +1,6 @@
 package service
 
 import (
-
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -73,4 +72,3 @@ func TestVT100WriterWriteRawStr(t *testing.T) {
 		assert.Equal(t, s.expected, pw.buffer)
 	}
 }
-

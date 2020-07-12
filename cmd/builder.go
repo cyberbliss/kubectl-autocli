@@ -38,10 +38,10 @@ type Builder interface {
 }
 
 type DefaultBuilder struct {
-	Streams     genericclioptions.IOStreams
-	suggestions []prompt.Suggest
+	Streams            genericclioptions.IOStreams
+	suggestions        []prompt.Suggest
 	contextSuggestions map[string][]prompt.Suggest
-	cmdOptions cmdOptions
+	cmdOptions         cmdOptions
 }
 
 type cmdOptions func() []prompt.Suggest
@@ -86,11 +86,11 @@ func (b *DefaultBuilder) PopulateSuggestions(resources *[]model.KubeResource) {
 
 func (b *DefaultBuilder) PopulateContextSuggestions(source map[string][][]string) {
 	target := make(map[string][]prompt.Suggest)
-	for k,v := range source {
+	for k, v := range source {
 		s := make([]prompt.Suggest, 0)
 		for _, val := range v {
 			s = append(s, prompt.Suggest{
-				Text: val[0],
+				Text:        val[0],
 				Description: val[1],
 			})
 		}
@@ -134,7 +134,7 @@ func (b *DefaultBuilder) WatchCache() *WatchCache {
 /*
 Connect to the Watch server - if its not running then start it and wait for it
 to cache resource entries from the Kube clusters
- */
+*/
 func (b *DefaultBuilder) WatchClient(address, logLvlArg, kubeConfigArg, kubeCtxArg string) (WatchClient, error) {
 	//Declaring these explicitly because of the exponential backoff function later on
 	var (
@@ -168,11 +168,11 @@ func (b *DefaultBuilder) WatchClient(address, logLvlArg, kubeConfigArg, kubeCtxA
 	}
 
 	/*
-	Use exponential backoff to create a Watch client and check its status - if either
-	returns an error then the backoff operation is called again. This is repeated (after an
-	increasingly lengthy wait) until either the client creation and status check are successful
-	or the retry time period is exceeded.
-	 */
+		Use exponential backoff to create a Watch client and check its status - if either
+		returns an error then the backoff operation is called again. This is repeated (after an
+		increasingly lengthy wait) until either the client creation and status check are successful
+		or the retry time period is exceeded.
+	*/
 	boff := backoff.NewExponentialBackOff()
 	boff.MaxElapsedTime = 10 * time.Second //max time to wait for the Watch server to start serving Kube resources
 	err = backoff.Retry(func() error {
@@ -189,7 +189,7 @@ func (b *DefaultBuilder) WatchClient(address, logLvlArg, kubeConfigArg, kubeCtxA
 }
 
 func (b *DefaultBuilder) Serve(l net.Listener, cache *WatchCache) error {
-	rpc.RegisterName(reflect.TypeOf(b).String(),cache)
+	rpc.RegisterName(reflect.TypeOf(b).String(), cache)
 	rpc.HandleHTTP()
 	return http.Serve(l, nil)
 }
@@ -217,7 +217,7 @@ func isAlreadyText(text string) bool {
 }
 
 func getGetOptions() []prompt.Suggest {
-	options := []prompt.Suggest {
+	options := []prompt.Suggest{
 		{Text: "--output json", Description: "Output manifest in json format"},
 		{Text: "--output yaml", Description: "Output manifest in yaml format"},
 		{Text: "--output wide", Description: "Output more details"},
@@ -232,7 +232,7 @@ func getLogOptions() []prompt.Suggest {
 		{Text: "--all-containers", Description: "Get all containers' logs in the pod"},
 		{Text: "--container", Description: "Get logs for specific container"},
 		{Text: "--follow", Description: "Specify if the logs should be streamed"},
-		{Text: "--prefix",Description: "Prefix each log line with the log source (pod name and container name)"},
+		{Text: "--prefix", Description: "Prefix each log line with the log source (pod name and container name)"},
 		{Text: "--previous", Description: "Print the logs for the previous instance of the container in a pod if it exists"},
 		{Text: "--timestamps", Description: "Include timestamps on each line in the log output"},
 	}
@@ -259,7 +259,7 @@ func launchWatchCmd(logLvlArg, kubeConfigArg, kubeCtxArg string) error {
 	cmd.SysProcAttr = sysproc
 	err := cmd.Start()
 	if err != nil {
-		return fmt.Errorf("failed to execute Watch cmd in separate process: %s",err)
+		return fmt.Errorf("failed to execute Watch cmd in separate process: %s", err)
 	}
 
 	return nil

@@ -19,9 +19,9 @@ import (
 )
 
 type TestBuilder struct {
-	Streams     genericclioptions.IOStreams
-	suggestions []prompt.Suggest
-	cmdOptions cmdOptions
+	Streams        genericclioptions.IOStreams
+	suggestions    []prompt.Suggest
+	cmdOptions     cmdOptions
 	testKubeClient *TestKubeClient
 }
 
@@ -58,7 +58,7 @@ func (t *TestBuilder) KubeClient(clients map[string]kubernetes.Interface) servic
 		testClients[key] = testclient.NewSimpleClientset()
 	}
 	t.testKubeClient = &TestKubeClient{
-		clients: testClients,
+		clients:         testClients,
 		watchObjectLock: &sync.RWMutex{},
 		watchObjectHits: map[string]int{},
 	}
@@ -77,9 +77,8 @@ func (t *TestBuilder) WatchClient(address, logLvlArg, kubeConfigArg, kubeCtxArg 
 func (t *TestBuilder) Serve(l net.Listener, c *WatchCache) error {
 
 	fmt.Println("in TestBuilder.Serve" + reflect.TypeOf(t).String())
-	rpc.RegisterName(reflect.TypeOf(t).String(),c)
+	rpc.RegisterName(reflect.TypeOf(t).String(), c)
 	rpc.HandleHTTP()
-
 
 	return http.Serve(l, nil)
 
@@ -90,9 +89,9 @@ func (t *TestBuilder) SetCmdOptions(cmdoptions cmdOptions) {
 }
 
 type TestKubeClient struct {
-	clients map[string]kubernetes.Interface
-	watchObjectHits  map[string]int
-	watchObjectLock  *sync.RWMutex
+	clients         map[string]kubernetes.Interface
+	watchObjectHits map[string]int
+	watchObjectLock *sync.RWMutex
 }
 
 func (t TestKubeClient) GetResources(context, kind string) ([]model.KubeResource, error) {
@@ -105,7 +104,7 @@ func (t TestKubeClient) GetResources(context, kind string) ([]model.KubeResource
 			service.AddToKubeResources(&resources, "node", "prodnode2", "", "", "NotReady")
 
 		}
-	} else if context == "dev"{
+	} else if context == "dev" {
 		switch kind {
 		case "node":
 			service.AddToKubeResources(&resources, "node", "devnode1", "", "", "Ready")
@@ -141,15 +140,14 @@ func (t TestKubeClient) WatchResources(context, kind string, out chan *model.Res
 	}
 	evt.Type = model.Added
 	evt.Resource = &model.KubeResource{
-		TypeMeta:   model.TypeMeta{Kind: "pod"},
+		TypeMeta: model.TypeMeta{Kind: "pod"},
 		ResourceMeta: model.ResourceMeta{
-			Name: podname,
+			Name:      podname,
 			Namespace: nsname,
-			Status: "Running",
+			Status:    "Running",
 		},
 	}
 	out <- &evt
 
 	return nil
 }
-

@@ -10,7 +10,6 @@ import (
 	"os/user"
 	"path/filepath"
 	"strings"
-
 )
 
 func AddCommonFlags(cmd *cobra.Command) {
@@ -127,8 +126,3 @@ func StringAfter(source string, after string) string {
 	}
 	return source[adjustedPos:len(source)]
 }
-
-
-
-
-

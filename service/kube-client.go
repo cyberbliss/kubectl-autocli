@@ -42,7 +42,7 @@ func (d *DefaultKubeClient) Ping(ctx string) error {
 	return nil
 }
 
-func (d *DefaultKubeClient) WatchResources(context, kind string, out chan *model.ResourceEvent) error{
+func (d *DefaultKubeClient) WatchResources(context, kind string, out chan *model.ResourceEvent) error {
 	client, ok := d.clients[context]
 	if !ok {
 		return fmt.Errorf("context not found: %s", context)
@@ -74,19 +74,19 @@ func (d *DefaultKubeClient) WatchResources(context, kind string, out chan *model
 			if strings.TrimSpace(pod.Status.Message) == "" {
 				status = string(pod.Status.Phase)
 			} else {
-				status = fmt.Sprintf("%s: %s",pod.Status.Phase, pod.Status.Message)
+				status = fmt.Sprintf("%s: %s", pod.Status.Phase, pod.Status.Message)
 			}
 
 			//get all the container names (including init ones if there are any)
 			if len(pod.Spec.InitContainers) > 0 {
-				for _,c := range pod.Spec.InitContainers {
+				for _, c := range pod.Spec.InitContainers {
 					cNames = append(cNames, model.ContainerMeta{
 						Name: c.Name,
 						Type: "Init Container",
 					})
 				}
 			}
-			for _,c := range pod.Spec.Containers {
+			for _, c := range pod.Spec.Containers {
 				cNames = append(cNames, model.ContainerMeta{
 					Name: c.Name,
 					Type: "Container",
@@ -94,13 +94,13 @@ func (d *DefaultKubeClient) WatchResources(context, kind string, out chan *model
 			}
 
 			evt.Resource = &model.KubeResource{
-				TypeMeta:   model.TypeMeta{Kind: "pod"},
+				TypeMeta: model.TypeMeta{Kind: "pod"},
 				ResourceMeta: model.ResourceMeta{
-					Name: pod.Name,
-					Namespace: pod.Namespace,
+					Name:            pod.Name,
+					Namespace:       pod.Namespace,
 					ResourceVersion: pod.ResourceVersion,
-					Status: status,
-					ContainerNames: cNames,
+					Status:          status,
+					ContainerNames:  cNames,
 				},
 			}
 			out <- &evt
@@ -137,7 +137,7 @@ func (d *DefaultKubeClient) GetResources(ctx, kind string) ([]model.KubeResource
 }
 
 func (d *DefaultKubeClient) watchPods(client kubernetes.Interface, ns string) (out <-chan watch.Event, err error) {
-	req, err := client.CoreV1().Pods(ns).Watch(context.TODO(),metav1.ListOptions{})
+	req, err := client.CoreV1().Pods(ns).Watch(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -145,15 +145,15 @@ func (d *DefaultKubeClient) watchPods(client kubernetes.Interface, ns string) (o
 }
 
 func (d *DefaultKubeClient) getNodes(client kubernetes.Interface) (*v1.NodeList, error) {
-	return client.CoreV1().Nodes().List(context.TODO(),metav1.ListOptions{})
+	return client.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
 }
 
 func (d *DefaultKubeClient) getConfigMaps(client kubernetes.Interface, ns string) (*v1.ConfigMapList, error) {
-	return client.CoreV1().ConfigMaps(ns).List(context.TODO(),metav1.ListOptions{})
+	return client.CoreV1().ConfigMaps(ns).List(context.TODO(), metav1.ListOptions{})
 }
 
 func (d *DefaultKubeClient) getServices(client kubernetes.Interface, ns string) (*v1.ServiceList, error) {
-	return client.CoreV1().Services(ns).List(context.TODO(),metav1.ListOptions{})
+	return client.CoreV1().Services(ns).List(context.TODO(), metav1.ListOptions{})
 }
 
 func NewKubeClient(clients map[string]kubernetes.Interface) KubeClient {
@@ -169,7 +169,7 @@ func AddToKubeResources(resourcesPtr *[]model.KubeResource, tm, name, ns, rv, st
 	res := *resourcesPtr
 	t := model.TypeMeta{Kind: tm}
 	*resourcesPtr = append(res, model.KubeResource{
-		TypeMeta:     t,
+		TypeMeta: t,
 		ResourceMeta: model.ResourceMeta{
 			Name:            name,
 			Namespace:       ns,
@@ -193,5 +193,3 @@ func determineNodeStatus(conditions []v1.NodeCondition) string {
 
 	return status
 }
-
-

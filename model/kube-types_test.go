@@ -12,11 +12,11 @@ func TestByKindNSNameSort(t *testing.T) {
 	expected := make([]KubeResource, 0)
 	for _, kind := range []string{"deployment", "pod"} {
 		for _, ns := range []string{"abc", "def"} {
-			for _, name := range []string{"a","b","c"} {
+			for _, name := range []string{"a", "b", "c"} {
 				r := KubeResource{
-					TypeMeta:     TypeMeta{Kind: kind},
+					TypeMeta: TypeMeta{Kind: kind},
 					ResourceMeta: ResourceMeta{
-						Name: name,
+						Name:      name,
 						Namespace: ns,
 					},
 				}

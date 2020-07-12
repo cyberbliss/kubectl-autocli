@@ -11,7 +11,6 @@ import (
 
 	strUtil "github.com/agrison/go-commons-lang/stringUtils"
 	log "github.com/sirupsen/logrus"
-
 )
 
 type WatchCache struct {
@@ -158,7 +157,7 @@ type WatchClient interface {
 }
 
 type WatchClientDefault struct {
-	conn *rpc.Client
+	conn        *rpc.Client
 	builderType string
 }
 
@@ -176,7 +175,7 @@ func NewWatchClient(address, builderType, rpcPath string) (*WatchClientDefault, 
 	}
 
 	return &WatchClientDefault{
-		conn: connection,
+		conn:        connection,
 		builderType: builderType,
 	}, nil
 }
