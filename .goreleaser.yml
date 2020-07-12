@@ -10,6 +10,8 @@ builds:
   goarch:
     - amd64
   binary: kubectl-ac
+  ldflags:
+    - -s -w -X autocli/cmd.BuildVersion={{.Version}} -X autocli/cmd.BuildTime={{.Date}}
 archives:
 - replacements:
     darwin: Darwin
