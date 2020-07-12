@@ -2,6 +2,7 @@ package service
 
 import (
 	"autocli/model"
+	"context"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -70,6 +71,6 @@ func createTestNodes(client kubernetes.Interface, names ...string) {
 				Conditions: []v1.NodeCondition{{Type: v1.NodeReady, Status: v1.ConditionTrue}},
 			},
 		}
-		client.CoreV1().Nodes().Create(node)
+		client.CoreV1().Nodes().Create(context.TODO(),node, metav1.CreateOptions{})
 	}
 }
