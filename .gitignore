@@ -1,2 +1,4 @@
 .idea
 autocli
+releases/*
+/dist
