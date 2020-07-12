@@ -46,12 +46,13 @@ DESCRIPTION
 
 	AddCommonFlags(cmd)
 	cmd.Flags().StringP("namespace", "n", "", "Retrieve resources for a specific namespace (default is all)")
+	cmd.Flags().Bool("setproxy", true, "If true then set the HTTPS_PROXY env var to the kube context's proxy-url value (if available) before executing kubectl. This is only relevant if a proxy is required to access the Kube Master AND kubectl version is < v1.19")
 
 	return cmd
 }
 
 func RunResources(b Builder, cmd *cobra.Command, args []string) error {
-	var context string
+	var context, proxyUrl string
 
 	b.SetCmdOptions(deriveCmdOptions(cmd.CalledAs()))
 
@@ -73,13 +74,19 @@ func RunResources(b Builder, cmd *cobra.Command, args []string) error {
 		if strUtil.IsBlank(context) {
 			return fmt.Errorf("couldn't determine active context; please specify one")
 		}
+		proxyUrl = kubeConfig.Clusters[context].ProxyURL
 	} else {
 		// check that the specified context exists, if so use it
-		if _, ok := kubeConfig.Clusters[args[0]]; ok {
+		if cluster, ok := kubeConfig.Clusters[args[0]]; ok {
 			context = args[0]
+			proxyUrl = cluster.ProxyURL
 		} else {
 			return fmt.Errorf("unknown context: %s", args[0])
 		}
+	}
+
+	if val, _ := cmd.Flags().GetBool("setproxy"); !val {
+		proxyUrl = ""
 	}
 
 	ns, err := cmd.Flags().GetString("namespace")
@@ -147,7 +154,7 @@ func RunResources(b Builder, cmd *cobra.Command, args []string) error {
 
 	log.Debugf("Your input: %s", in)
 	if strUtil.IsNotBlank(in) {
-		executor(kreq, in)
+		executor(context, kreq, in, proxyUrl)
 	}
 	return nil
 }
@@ -165,7 +172,8 @@ func makeFilter(context, ns, kind string) WatchFilter {
 
 	return wf
 }
-func executor(kind, in string) {
+func executor(ctx, kind, in, proxyUrl string) {
+
 	var cmdArgs []string
 	input := strings.Split(in, " ")
 	switch kind {
@@ -184,8 +192,13 @@ func executor(kind, in string) {
 		cmdArgs = []string{"get", kind}
 		cmdArgs = append(cmdArgs, input...)
 	}
-	//log.Debug(cmdArgs)
+	cmdArgs = append(cmdArgs, "--context", fmt.Sprintf("%s",ctx))
+	log.Debug(cmdArgs)
 	cmd := exec.Command("kubectl", cmdArgs...)
+	if proxyUrl != "" {
+		cmd.Env = os.Environ()
+		cmd.Env = append(cmd.Env, "HTTPS_PROXY="+proxyUrl)
+	}
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -194,28 +207,7 @@ func executor(kind, in string) {
 		log.Fatalf("failed with %s\n", err)
 	}
 }
-//func executor(rn, ns, args, c string) {
-//	//cmdArgs := []string{"get", "pod", rn, "-n", ns}
-//	var cmdArgs []string
-//	if strUtil.ContainsAny(c, getLogAliases()...) {
-//		cmdArgs = append(cmdArgs, "logs")
-//	} else {
-//		cmdArgs = append(cmdArgs, "get", "pod")
-//	}
-//	cmdArgs = append(cmdArgs, rn, "-n", ns)
-//
-//	if strUtil.IsNotBlank(args) {
-//		cmdArgs = append(cmdArgs, strings.Split(strUtil.Trim(args), " ")...)
-//	}
-//	cmd := exec.Command("kubectl", cmdArgs...)
-//	cmd.Stderr = os.Stderr
-//	cmd.Stdin = os.Stdin
-//	cmd.Stdout = os.Stdout
-//	err := cmd.Run()
-//	if err != nil {
-//		log.Fatalf("failed with %s\n", err)
-//	}
-//}
+
 
 // once a pod name has been selected we want to provide context appropriate options
 // dependent on whether this cmd was called with 'pod' (to get details on the pod) or 'log'

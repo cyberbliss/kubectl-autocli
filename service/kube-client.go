@@ -2,6 +2,7 @@ package service
 
 import (
 	"autocli/model"
+	"context"
 	"fmt"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -23,19 +24,19 @@ type DefaultKubeClient struct {
 	clients map[string]kubernetes.Interface
 }
 
-func (d *DefaultKubeClient) Ping(context string) error {
-	client, ok := d.clients[context]
+func (d *DefaultKubeClient) Ping(ctx string) error {
+	client, ok := d.clients[ctx]
 	if !ok {
-		return fmt.Errorf("Context not found: %s", context)
+		return fmt.Errorf("context not found: %s", ctx)
 	}
-	nodes, err := client.CoreV1().Nodes().List(metav1.ListOptions{})
+	nodes, err := client.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
 
 	if err != nil {
 		return err
 	}
 	log.Debugf("Nodes: %s", nodes)
 	if len(nodes.Items) < 1 {
-		return fmt.Errorf("no nodes available for context: %s", context)
+		return fmt.Errorf("no nodes available for context: %s", ctx)
 	}
 
 	return nil
@@ -111,12 +112,12 @@ func (d *DefaultKubeClient) WatchResources(context, kind string, out chan *model
 	return nil
 }
 
-func (d *DefaultKubeClient) GetResources(context, kind string) ([]model.KubeResource, error) {
+func (d *DefaultKubeClient) GetResources(ctx, kind string) ([]model.KubeResource, error) {
 	var resources []model.KubeResource
 
-	client, ok := d.clients[context]
+	client, ok := d.clients[ctx]
 	if !ok {
-		return []model.KubeResource{}, fmt.Errorf("context not found: %s", context)
+		return []model.KubeResource{}, fmt.Errorf("context not found: %s", ctx)
 	}
 
 	switch kind {
@@ -136,7 +137,7 @@ func (d *DefaultKubeClient) GetResources(context, kind string) ([]model.KubeReso
 }
 
 func (d *DefaultKubeClient) watchPods(client kubernetes.Interface, ns string) (out <-chan watch.Event, err error) {
-	req, err := client.CoreV1().Pods(ns).Watch(metav1.ListOptions{})
+	req, err := client.CoreV1().Pods(ns).Watch(context.TODO(),metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -144,15 +145,15 @@ func (d *DefaultKubeClient) watchPods(client kubernetes.Interface, ns string) (o
 }
 
 func (d *DefaultKubeClient) getNodes(client kubernetes.Interface) (*v1.NodeList, error) {
-	return client.CoreV1().Nodes().List(metav1.ListOptions{})
+	return client.CoreV1().Nodes().List(context.TODO(),metav1.ListOptions{})
 }
 
 func (d *DefaultKubeClient) getConfigMaps(client kubernetes.Interface, ns string) (*v1.ConfigMapList, error) {
-	return client.CoreV1().ConfigMaps(ns).List(metav1.ListOptions{})
+	return client.CoreV1().ConfigMaps(ns).List(context.TODO(),metav1.ListOptions{})
 }
 
 func (d *DefaultKubeClient) getServices(client kubernetes.Interface, ns string) (*v1.ServiceList, error) {
-	return client.CoreV1().Services(ns).List(metav1.ListOptions{})
+	return client.CoreV1().Services(ns).List(context.TODO(),metav1.ListOptions{})
 }
 
 func NewKubeClient(clients map[string]kubernetes.Interface) KubeClient {
