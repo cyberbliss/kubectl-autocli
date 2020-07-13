@@ -105,8 +105,8 @@ func StringBetween(source, start, end string) string {
 	return source[posFirstAdjusted:posLast]
 }
 
+// Get substring before a string.
 func StringBefore(source, before string) string {
-	// Get substring before a string.
 	pos := strings.Index(source, before)
 	if pos == -1 {
 		return ""
@@ -114,8 +114,8 @@ func StringBefore(source, before string) string {
 	return source[0:pos]
 }
 
+// Get substring after after string.
 func StringAfter(source string, after string) string {
-	// Get substring after after string.
 	pos := strings.LastIndex(source, after)
 	if pos == -1 {
 		return ""
@@ -125,4 +125,14 @@ func StringAfter(source string, after string) string {
 		return ""
 	}
 	return source[adjustedPos:len(source)]
+}
+
+// Contains tells whether slice a contains string x.
+func Contains(a []string, x string) bool {
+	for _, n := range a {
+		if x == n {
+			return true
+		}
+	}
+	return false
 }

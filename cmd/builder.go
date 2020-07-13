@@ -216,15 +216,26 @@ func isAlreadyText(text string) bool {
 	return false
 }
 
-func getGetOptions() []prompt.Suggest {
+func getCommonGetOptions() []prompt.Suggest {
 	options := []prompt.Suggest{
 		{Text: "--output json", Description: "Output manifest in json format"},
 		{Text: "--output yaml", Description: "Output manifest in yaml format"},
 		{Text: "--output wide", Description: "Output more details"},
 		{Text: "--watch", Description: "After listing/getting the requested object, watch for changes"},
+		{Text: "@describe", Description: "Use kubectl describe instead of get on the resource"},
 	}
 
 	return options
+}
+
+func getPodGetOptions() []prompt.Suggest {
+	options := getCommonGetOptions()
+
+	return options
+}
+
+func getNodeGetOptions() []prompt.Suggest {
+	return getCommonGetOptions()
 }
 
 func getLogOptions() []prompt.Suggest {
@@ -235,6 +246,14 @@ func getLogOptions() []prompt.Suggest {
 		{Text: "--prefix", Description: "Prefix each log line with the log source (pod name and container name)"},
 		{Text: "--previous", Description: "Print the logs for the previous instance of the container in a pod if it exists"},
 		{Text: "--timestamps", Description: "Include timestamps on each line in the log output"},
+	}
+
+	return options
+}
+
+func getSSHOptions() []prompt.Suggest {
+	options := []prompt.Suggest{
+		{Text: "--container", Description: "Get logs for specific container"},
 	}
 
 	return options
