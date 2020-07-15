@@ -31,9 +31,10 @@ DESCRIPTION
 		- pod, po, p (the default)
 		- log, lo, l
 		- node, no, n
+		- ssh (to exec into the selected Pod)
 
 	Example:
-		'kubectl ag log' will display a prompt so you can select from a list of Pod names the logs you want to show 
+		'kubectl ac log' will display a prompt so you can select from a list of Pod names the logs you want to show 
 `,
 		Aliases: getResourcesAliases(),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -276,6 +277,8 @@ func deriveKindRequired(cmd string) string {
 		return "log"
 	case strUtil.ContainsAny(cmd, getSSHAliases()...):
 		return "ssh"
+	case cmd == "resources":
+		return "pod"
 	default:
 		return ""
 	}
