@@ -5,7 +5,6 @@ import (
 	"autocli/service"
 	"fmt"
 	"github.com/c-bata/go-prompt"
-
 	"io"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/kubernetes"
@@ -216,15 +215,26 @@ func isAlreadyText(text string) bool {
 	return false
 }
 
-func getGetOptions() []prompt.Suggest {
+func getCommonGetOptions() []prompt.Suggest {
 	options := []prompt.Suggest{
 		{Text: "--output json", Description: "Output manifest in json format"},
 		{Text: "--output yaml", Description: "Output manifest in yaml format"},
 		{Text: "--output wide", Description: "Output more details"},
 		{Text: "--watch", Description: "After listing/getting the requested object, watch for changes"},
+		{Text: "@describe", Description: "Use kubectl describe instead of get on the resource"},
 	}
 
 	return options
+}
+
+func getPodGetOptions() []prompt.Suggest {
+	options := getCommonGetOptions()
+
+	return options
+}
+
+func getNodeGetOptions() []prompt.Suggest {
+	return getCommonGetOptions()
 }
 
 func getLogOptions() []prompt.Suggest {
@@ -240,13 +250,27 @@ func getLogOptions() []prompt.Suggest {
 	return options
 }
 
+func getSSHOptions() []prompt.Suggest {
+	options := []prompt.Suggest{
+		{Text: "--container", Description: "Get logs for specific container"},
+	}
+
+	return options
+}
+
 func getDefaultOptions() []prompt.Suggest {
 	return []prompt.Suggest{}
 }
 
 func launchWatchCmd(logLvlArg, kubeConfigArg, kubeCtxArg string) error {
+	// find the absolute path to the running executable and use this for executing the watch cmd
+	exe, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("failed to find execuable to launch: %s", err)
+	}
+	log.Debugf("path to watch executable: %s", exe)
 	cmd := exec.Command(
-		"/Users/stevejudd/dev_work/kubectl-autocli/releases/darwin/kubectl-ag",
+		exe,
 		"watch",
 		"--syslog",
 		logLvlArg,
@@ -257,7 +281,7 @@ func launchWatchCmd(logLvlArg, kubeConfigArg, kubeCtxArg string) error {
 		Setpgid: true,
 	}
 	cmd.SysProcAttr = sysproc
-	err := cmd.Start()
+	err = cmd.Start()
 	if err != nil {
 		return fmt.Errorf("failed to execute Watch cmd in separate process: %s", err)
 	}

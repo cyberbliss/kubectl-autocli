@@ -31,9 +31,10 @@ DESCRIPTION
 		- pod, po, p (the default)
 		- log, lo, l
 		- node, no, n
+		- ssh (to exec into the selected Pod)
 
 	Example:
-		'kubectl ag log' will display a prompt so you can select from a list of Pod names the logs you want to show 
+		'kubectl ac log' will display a prompt so you can select from a list of Pod names the logs you want to show 
 `,
 		Aliases: getResourcesAliases(),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -122,7 +123,7 @@ func RunResources(b Builder, cmd *cobra.Command, args []string) error {
 	b.PopulateSuggestions(&kr)
 
 	kreq := deriveKindRequired(cmd.CalledAs())
-	if kreq == "log" {
+	if kreq == "log" || kreq == "ssh" {
 		populateContainerSuggestions(b, cmd.CalledAs(), &kr)
 	}
 
@@ -152,6 +153,7 @@ func RunResources(b Builder, cmd *cobra.Command, args []string) error {
 		prompt.OptionSuggestionTextColor(service.Themes["light"].OptionSuggestionTextColor),
 		prompt.OptionSuggestionBGColor(service.Themes["light"].OptionSuggestionBGColor))
 
+	in = strings.TrimSpace(in)
 	log.Debugf("Your input: %s", in)
 	if strUtil.IsNotBlank(in) {
 		executor(context, kreq, in, proxyURL)
@@ -174,25 +176,54 @@ func makeFilter(context, ns, kind string) WatchFilter {
 }
 func executor(ctx, kind, in, proxyURL string) {
 
-	var cmdArgs []string
+	var (
+		cmdArgs        []string
+		getOrDescribe  string
+		sanitisedInput []string
+	)
+
 	input := strings.Split(in, " ")
+
+	switch {
+	case Contains(input, "@describe"):
+		getOrDescribe = "describe"
+		//need to remove all elements in the input slice to prevent kubectl errors (apart from 1st two: pod name & namespace)
+		sanitisedInput = input[:2]
+	default:
+		getOrDescribe = "get"
+		sanitisedInput = input
+	}
+
 	switch kind {
 	case "pod", "log":
-		ns := StringBetween(input[1], "[", "]")
+		ns := StringBetween(sanitisedInput[1], "[", "]")
 		if kind == "log" {
 			cmdArgs = []string{"logs"}
 		} else {
-			cmdArgs = []string{"get", kind}
+			cmdArgs = []string{getOrDescribe, kind}
 		}
-		cmdArgs = append(cmdArgs, input[0], "--namespace", ns)
-		if len(input) > 2 {
-			cmdArgs = append(cmdArgs, input[2:]...)
+		cmdArgs = append(cmdArgs, sanitisedInput[0], "--namespace", ns)
+		if len(sanitisedInput) > 2 {
+			cmdArgs = append(cmdArgs, sanitisedInput[2:]...)
 		}
+		cmdArgs = append(cmdArgs, "--context", fmt.Sprintf("%s", ctx))
+	case "ssh":
+		ns := StringBetween(sanitisedInput[1], "[", "]")
+		cmdArgs = []string{"exec", "-ti", sanitisedInput[0], "--namespace", ns, "--context", fmt.Sprintf("%s", ctx)}
+
+		// check if a container has been specified, if so add that to the exec command
+		if len(sanitisedInput) == 4 {
+			cmdArgs = append(cmdArgs, sanitisedInput[2:]...)
+		}
+
+		// the shell command always needs to go last
+		cmdArgs = append(cmdArgs, "--", "sh")
 	case "node":
-		cmdArgs = []string{"get", kind}
-		cmdArgs = append(cmdArgs, input...)
+		cmdArgs = []string{getOrDescribe, kind}
+		cmdArgs = append(cmdArgs, sanitisedInput...)
+		cmdArgs = append(cmdArgs, "--context", fmt.Sprintf("%s", ctx))
 	}
-	cmdArgs = append(cmdArgs, "--context", fmt.Sprintf("%s", ctx))
+
 	log.Debug(cmdArgs)
 	cmd := exec.Command("kubectl", cmdArgs...)
 	if proxyURL != "" {
@@ -214,10 +245,14 @@ func executor(ctx, kind, in, proxyURL string) {
 func deriveCmdOptions(cmd string) cmdOptions {
 	kind := deriveKindRequired(cmd)
 	switch kind {
-	case "pod", "node":
-		return getGetOptions
+	case "pod":
+		return getPodGetOptions
+	case "node":
+		return getNodeGetOptions
 	case "log":
 		return getLogOptions
+	case "ssh":
+		return getSSHOptions
 	default:
 		return getDefaultOptions
 	}
@@ -225,7 +260,7 @@ func deriveCmdOptions(cmd string) cmdOptions {
 
 func realKind(cmd string) string {
 	srcKind := deriveKindRequired(cmd)
-	if srcKind == "log" {
+	if srcKind == "log" || srcKind == "ssh" {
 		return "pod"
 	}
 
@@ -240,6 +275,10 @@ func deriveKindRequired(cmd string) string {
 		return "node"
 	case strUtil.ContainsAny(cmd, getLogAliases()...):
 		return "log"
+	case strUtil.ContainsAny(cmd, getSSHAliases()...):
+		return "ssh"
+	case cmd == "resources":
+		return "pod"
 	default:
 		return ""
 	}
@@ -255,6 +294,10 @@ func getLogAliases() []string {
 
 func getNodeAliases() []string {
 	return []string{"node", "no", "n"}
+}
+
+func getSSHAliases() []string {
+	return []string{"ssh"}
 }
 
 func populateContainerSuggestions(b Builder, cmd string, resources *[]model.KubeResource) {
@@ -277,5 +320,6 @@ func getResourcesAliases() []string {
 	aliases = append(aliases, getPodAliases()...)
 	aliases = append(aliases, getLogAliases()...)
 	aliases = append(aliases, getNodeAliases()...)
+	aliases = append(aliases, getSSHAliases()...)
 	return aliases
 }

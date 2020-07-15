@@ -9,12 +9,12 @@ import (
 
 func executor(t string) {
 	//if t == "bash" {
-		//cmd := exec.Command("/bin/sh","-c", "kubectl","get","pods")
-		cmd:= exec.Command("kubectl","version")
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		cmd.Run()
+	//cmd := exec.Command("/bin/sh","-c", "kubectl","get","pods")
+	cmd := exec.Command("kubectl", "version")
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Run()
 	//
 	//}
 	return
