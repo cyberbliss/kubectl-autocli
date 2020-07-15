@@ -122,7 +122,7 @@ func RunResources(b Builder, cmd *cobra.Command, args []string) error {
 	b.PopulateSuggestions(&kr)
 
 	kreq := deriveKindRequired(cmd.CalledAs())
-	if kreq == "log" || kreq == "ssh"{
+	if kreq == "log" || kreq == "ssh" {
 		populateContainerSuggestions(b, cmd.CalledAs(), &kr)
 	}
 
@@ -176,8 +176,8 @@ func makeFilter(context, ns, kind string) WatchFilter {
 func executor(ctx, kind, in, proxyURL string) {
 
 	var (
-		cmdArgs []string
-		getOrDescribe string
+		cmdArgs        []string
+		getOrDescribe  string
 		sanitisedInput []string
 	)
 
@@ -208,7 +208,7 @@ func executor(ctx, kind, in, proxyURL string) {
 		cmdArgs = append(cmdArgs, "--context", fmt.Sprintf("%s", ctx))
 	case "ssh":
 		ns := StringBetween(sanitisedInput[1], "[", "]")
-		cmdArgs = []string{"exec","-ti",sanitisedInput[0],"--namespace", ns, "--context", fmt.Sprintf("%s", ctx)}
+		cmdArgs = []string{"exec", "-ti", sanitisedInput[0], "--namespace", ns, "--context", fmt.Sprintf("%s", ctx)}
 
 		// check if a container has been specified, if so add that to the exec command
 		if len(sanitisedInput) == 4 {
@@ -259,7 +259,7 @@ func deriveCmdOptions(cmd string) cmdOptions {
 
 func realKind(cmd string) string {
 	srcKind := deriveKindRequired(cmd)
-	if srcKind == "log" || srcKind == "ssh"{
+	if srcKind == "log" || srcKind == "ssh" {
 		return "pod"
 	}
 

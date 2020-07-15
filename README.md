@@ -1,4 +1,10 @@
 # An autocomplete wrapper for kubectl
+## Installation
+To install:  
+`brew install cyberbliss/tap/kubectl-ac`
+
+To upgrade:  
+`brew upgrade cyberbliss/tap/kubectl-ac`
 
 ## Development
 

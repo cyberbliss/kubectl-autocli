@@ -25,5 +25,5 @@ func NewVersionCommand(b Builder) *cobra.Command {
 func RunVersion(b Builder, cmd *cobra.Command, args []string) {
 	fmt.Fprintln(b.StdOut(), "kubectl-ac")
 	fmt.Fprintf(b.StdOut(), "Version: %s\n", BuildVersion)
-	fmt.Fprintf(b.StdOut(),"Build time: %s\n", BuildTime)
+	fmt.Fprintf(b.StdOut(), "Build time: %s\n", BuildTime)
 }
