@@ -187,8 +187,13 @@ func executor(ctx, kind, in, proxyURL string) {
 	switch {
 	case Contains(input, "@describe"):
 		getOrDescribe = "describe"
-		//need to remove all elements in the input slice to prevent kubectl errors (apart from 1st two: pod name & namespace)
-		sanitisedInput = input[:2]
+		if kind == "node" {
+			// need to remove any elements after the node name
+			sanitisedInput = input[:1]
+		} else {
+			//need to remove all elements in the input slice to prevent kubectl errors (apart from 1st two: pod name & namespace)
+			sanitisedInput = input[:2]
+		}
 	default:
 		getOrDescribe = "get"
 		sanitisedInput = input
